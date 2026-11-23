@@ -1,70 +1,37 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PLUGINS_BASE="${ANTIGRAVITY_PLUGINS_DIR:-$HOME/.gemini/config/plugins}"
+# Antigravity Pulse Installer Wrapper (macOS / Linux)
+# Works both inside a cloned repository and via:
+#   curl -fsSL https://raw.githubusercontent.com/lmjmt/antigravity-pulse/main/scripts/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/lmjmt/antigravity-pulse/main/scripts/install.sh | bash -s -- --version v1.2.0
 
-usage() {
-    cat <<EOF
-Usage:
-  ./scripts/install.sh                         Install antigravity-pulse into $PLUGINS_BASE/antigravity-pulse
-  ./scripts/install.sh --sync-sidecar <dir>    Sync sidecars/task_monitor/ into an existing plugin directory (e.g. task-monitor)
-EOF
-}
+REPO="${ANTIGRAVITY_PULSE_REPO:-lmjmt/antigravity-pulse}"
+REF="${ANTIGRAVITY_PULSE_REF:-main}"
 
-sync_dir() {
-    local src="$1"
-    local dst="$2"
-    mkdir -p "$dst"
-    if command -v rsync >/dev/null 2>&1; then
-        rsync -a --delete \
-            --exclude '__pycache__' \
-            --exclude '*.pyc' \
-            --exclude '.DS_Store' \
-            "$src/" "$dst/"
-    else
-        rm -rf "$dst"
-        mkdir -p "$dst"
-        cp -R "$src/." "$dst/"
-        find "$dst" -name '__pycache__' -type d -exec rm -rf {} + 2>/dev/null || true
-    fi
-}
-
-if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
-    usage
-    exit 0
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Error: python3 (3.9+) is required to install and run Antigravity Pulse." >&2
+    exit 1
 fi
 
-if [[ "${1:-}" == "--sync-sidecar" ]]; then
-    TARGET_PLUGIN="${2:-}"
-    if [[ -z "$TARGET_PLUGIN" ]]; then
-        echo "Error: missing <plugin-dir> argument for --sync-sidecar" >&2
-        usage
-        exit 1
+SCRIPT_SOURCE="${BASH_SOURCE[0]:-}"
+if [[ -n "$SCRIPT_SOURCE" && -f "$SCRIPT_SOURCE" ]]; then
+    SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+    if [[ -f "$SCRIPT_DIR/install.py" && -f "$SCRIPT_DIR/../plugin.json" ]]; then
+        exec python3 "$SCRIPT_DIR/install.py" "$@"
     fi
-    TARGET_SIDECAR="$PLUGINS_BASE/$TARGET_PLUGIN/sidecars/task_monitor"
-    if [[ ! -d "$PLUGINS_BASE/$TARGET_PLUGIN" ]]; then
-        echo "Error: target plugin directory not found: $PLUGINS_BASE/$TARGET_PLUGIN" >&2
-        exit 1
-    fi
-    echo "Syncing modular sidecar into $TARGET_SIDECAR ..."
-    # Sync code subdirectories + monitor_core.py + server.py + sidecar.json
-    sync_dir "$REPO_ROOT/sidecars/task_monitor/core" "$TARGET_SIDECAR/core"
-    sync_dir "$REPO_ROOT/sidecars/task_monitor/web" "$TARGET_SIDECAR/web"
-    cp "$REPO_ROOT/sidecars/task_monitor/monitor_core.py" "$TARGET_SIDECAR/monitor_core.py"
-    cp "$REPO_ROOT/sidecars/task_monitor/server.py" "$TARGET_SIDECAR/server.py"
-    cp "$REPO_ROOT/sidecars/task_monitor/sidecar.json" "$TARGET_SIDECAR/sidecar.json"
-    echo "Done! Sidecar code synced (press Cmd+R in side pane to hot-reload ui/backend)."
-    exit 0
 fi
 
-TARGET_DIR="$PLUGINS_BASE/antigravity-pulse"
-echo "Installing antigravity-pulse plugin to $TARGET_DIR ..."
-mkdir -p "$TARGET_DIR"
-for sub in hooks rules skills sidecars; do
-    sync_dir "$REPO_ROOT/$sub" "$TARGET_DIR/$sub"
-done
-cp "$REPO_ROOT/plugin.json" "$TARGET_DIR/plugin.json"
-cp "$REPO_ROOT/hooks.json" "$TARGET_DIR/hooks.json"
-cp "$REPO_ROOT/README.md" "$TARGET_DIR/README.md"
-echo "Installed cleanly at $TARGET_DIR"
+# Remote pipe mode: fetch install.py into a temp file and run in --remote mode
+TMP_INSTALLER="$(mktemp "${TMPDIR:-/tmp}/ag-pulse-install.XXXXXX.py")"
+trap 'rm -f "$TMP_INSTALLER"' EXIT
+
+RAW_URL="https://raw.githubusercontent.com/${REPO}/${REF}/scripts/install.py"
+CURL_ARGS=(-fsSL)
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    CURL_ARGS+=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+fi
+
+echo "Fetching Antigravity Pulse installer from ${RAW_URL} ..."
+curl "${CURL_ARGS[@]}" "$RAW_URL" -o "$TMP_INSTALLER"
+python3 "$TMP_INSTALLER" --remote --repo "$REPO" "$@"

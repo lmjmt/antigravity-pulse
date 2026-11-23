@@ -73,15 +73,32 @@ antigravity-pulse/
 
 ## Quick Install
 
-### Option 1: Install as a Standalone Plugin
+### Option 1: One-Line Remote Install (No `git clone` Required)
+
+**macOS / Linux:**
 ```bash
-git clone <your-git-repo-url>/antigravity-pulse.git
+curl -fsSL https://raw.githubusercontent.com/lmjmt/antigravity-pulse/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/lmjmt/antigravity-pulse/main/scripts/install.ps1 | iex
+```
+
+> **Private repository note**: If the repository is private, export `GITHUB_TOKEN` (or `GITLAB_TOKEN` for self-hosted GitLab `--archive-url`) before running the one-liner. Pin a release tag via `--version v1.2.0` and optionally verify integrity with `--sha256 <hex>`.
+
+### Option 2: Install / Update / Diagnose / Uninstall from a Local Clone
+```bash
+git clone https://github.com/lmjmt/antigravity-pulse.git
 cd antigravity-pulse
-./scripts/install.sh
+./scripts/install.sh                 # Install (runs preflight doctor automatically)
+./scripts/install.sh --doctor        # Check Python 3.9+, data dirs & plugin conflicts
+./scripts/install.sh --update        # Update installation in place
+./scripts/install.sh --uninstall     # Cleanly remove antigravity-pulse
 ```
 Enable **Antigravity Pulse** in the Antigravity Customizations panel and open `[⚡ Antigravity Pulse](sidecar://antigravity-pulse/task_monitor/)` from any chat.
 
-### Option 2: Hot-Sync Sidecar into an Existing `task-monitor` Plugin
+### Option 3: Hot-Sync Sidecar into an Existing `task-monitor` Plugin
 ```bash
 ./scripts/install.sh --sync-sidecar task-monitor
 ```

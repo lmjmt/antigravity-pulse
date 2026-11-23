@@ -1,7 +1,7 @@
 {
   "name": "antigravity-pulse",
   "displayName": "Antigravity Pulse",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Bilingual (EN/ZH) real-time task monitor, Swarm topology tracker, multi-model token analytics, and context diagnostics sidecar for Antigravity. / Antigravity 中英双语实时任务脉搏、Swarm 子代理拓扑、多模型用量统计与上下文瘦身诊断监控盘。",
   "suggestedPrompts": [
     "Open the Antigravity Pulse monitor dashboard / 打开 Antigravity Pulse 监控大盘",

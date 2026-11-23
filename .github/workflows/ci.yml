@@ -2,24 +2,32 @@ name: CI
 
 on:
   push:
-    branches: ["main"]
+    branches: [main]
   pull_request:
-    branches: ["main"]
+    branches: [main]
 
 jobs:
-  verify:
-    runs-on: ubuntu-latest
+  check:
+    name: Verify (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - uses: actions/setup-node@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Compile Python bytecode
-        run: python3 -m compileall -q sidecars/task_monitor tests hooks
-      - name: Run unit tests
-        run: python3 -m unittest discover -s tests -v
-      - name: Check JS syntax & portability scan
+
+      - name: Run repository verification suite
         run: ./scripts/check.sh

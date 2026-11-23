@@ -73,15 +73,32 @@ antigravity-pulse/
 
 ## 快速安装
 
-### 方式一：作为独立开源插件安装
+### 方式一：一行命令远程免克隆安装（推荐）
+
+**macOS / Linux：**
 ```bash
-git clone <your-git-repo-url>/antigravity-pulse.git
+curl -fsSL https://raw.githubusercontent.com/lmjmt/antigravity-pulse/main/scripts/install.sh | bash
+```
+
+**Windows (PowerShell)：**
+```powershell
+irm https://raw.githubusercontent.com/lmjmt/antigravity-pulse/main/scripts/install.ps1 | iex
+```
+
+> **私有仓库提示**：若仓库当前为 Private，执行前请先导出 `GITHUB_TOKEN`（自托管 GitLab 可配合 `--archive-url` 与 `GITLAB_TOKEN`）。支持通过 `--version v1.2.0` 锁定版本，或使用 `--sha256 <hex>` 校验归档完整性。
+
+### 方式二：本地克隆安装、自检、升级与卸载
+```bash
+git clone https://github.com/lmjmt/antigravity-pulse.git
 cd antigravity-pulse
-./scripts/install.sh
+./scripts/install.sh                 # 自动预检并安装至 ~/.gemini/config/plugins/antigravity-pulse
+./scripts/install.sh --doctor        # 环境自检（Python 版本、数据目录、旧版冲突检测）
+./scripts/install.sh --update        # 原地升级
+./scripts/install.sh --uninstall     # 一键卸载
 ```
 安装完成后在 Antigravity Customizations 面板启用 **Antigravity Pulse**，对话中点击 `[⚡ Antigravity Pulse 监控盘](sidecar://antigravity-pulse/task_monitor/)` 即可打开。
 
-### 方式二：热同步 Sidecar 至已有本地 `task-monitor` 插件
+### 方式三：热同步 Sidecar 至已有本地 `task-monitor` 插件
 ```bash
 ./scripts/install.sh --sync-sidecar task-monitor
 ```

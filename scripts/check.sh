@@ -4,8 +4,9 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-echo "[1/4] Compiling Python bytecode..."
-python3 -m compileall -q sidecars/task_monitor tests hooks
+echo "[1/4] Compiling Python bytecode & checking shell syntax..."
+python3 -m compileall -q sidecars/task_monitor tests hooks scripts
+bash -n scripts/install.sh scripts/check.sh
 
 echo "[2/4] Checking frontend ES6 syntax..."
 if command -v node >/dev/null 2>&1; then

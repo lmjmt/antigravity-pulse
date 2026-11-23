@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Inject a quick sidecar launch hint into new Antigravity sessions."""
+"""Inject a bilingual quick sidecar launch hint into new Antigravity sessions."""
 
 import json
 import sys
@@ -16,9 +16,9 @@ def main():
             {
                 "systemMessage": {
                     "systemMessage": (
-                        "💡 [Antigravity Pulse] 已就绪：随时点击 "
-                        "[⚡ 打开 Antigravity Pulse 监控盘](sidecar://antigravity-pulse/task_monitor/) "
-                        "可在侧边栏查看任务步骤拓扑、模型用量与防卡死诊断。"
+                        "💡 [Antigravity Pulse] Ready / 已就绪: "
+                        "[⚡ Antigravity Pulse](sidecar://antigravity-pulse/task_monitor/) "
+                        "— Live task topology, model telemetry & stall diagnostics / 实时任务监控、模型用量与防卡死诊断。"
                     )
                 }
             }

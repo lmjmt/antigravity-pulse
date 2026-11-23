@@ -2,6 +2,20 @@
 
 All notable changes to **Antigravity Pulse** are documented in this file.
 
+## [1.2.0] - 2026-11-23
+
+### Cross-Platform Installer, Preflight Doctor & CI/Release Automation
+- **Unified Cross-Platform Installer (`scripts/install.py`)**:
+  - Added zero-dependency Python 3.9+ installer supporting `--doctor`, `--update`, `--uninstall`, `--sync-sidecar <dir>`, `--dry-run`, `--version <ref>`, `--archive-url`, and `--sha256` verification with TarSlip/symlink extraction guards.
+  - Added preflight checks for Python version (`>= 3.9`), Antigravity data directories, and legacy `task-monitor` plugin conflict warnings.
+  - Upgraded `scripts/install.sh` to support both local execution and one-line remote `curl | bash` installation, and added native Windows `scripts/install.ps1` (`irm | iex`).
+- **Plugin Assets & Bilingual Hook**:
+  - Added vector plugin icon `assets/logo.svg` and updated `hooks/on_session_start.py` with concise EN/ZH launch guidance.
+- **GitHub Actions CI & Release Workflows**:
+  - Added `.github/workflows/ci.yml` (`ubuntu-latest` + `macos-latest`) and `.github/workflows/release.yml` (automated `.tar.gz`, `.zip`, and `SHA256SUMS.txt` on `v*` tags).
+- **Installer Test Suite**:
+  - Added `tests/test_installer.py` covering doctor checks, dry-run/install/uninstall lifecycle, `--sync-sidecar`, SHA256 validation, and TarSlip blocking.
+
 ## [1.1.0] - 2026-11-23
 
 ### Bilingual Support (English & Simplified Chinese)

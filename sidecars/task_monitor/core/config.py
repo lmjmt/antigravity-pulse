@@ -3,6 +3,8 @@
 import os
 from datetime import datetime, timedelta
 
+from core.i18n import TIME_RANGE_LABELS_I18N, normalize_lang
+
 CACHE_SCHEMA_VERSION = "v4"
 
 DEFAULT_DATA_DIRS = (
@@ -55,10 +57,11 @@ def normalize_time_range(raw):
     return val if val in TIME_RANGE_LABELS else "all"
 
 
-def get_time_range_bounds(raw):
+def get_time_range_bounds(raw, lang="zh"):
     """Return (range_key, start_local, now_local, start_utc, short_label, session_kpi_label)."""
     key = normalize_time_range(raw)
-    short_label, kpi_label, days = TIME_RANGE_LABELS[key]
+    eff_lang = normalize_lang(lang)
+    short_label, kpi_label, days = TIME_RANGE_LABELS_I18N[eff_lang][key]
     local_tz = datetime.now().astimezone().tzinfo
     now_local = datetime.now(local_tz)
     if days is None:

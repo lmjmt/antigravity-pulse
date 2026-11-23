@@ -1,12 +1,12 @@
 {
   "name": "antigravity-pulse",
   "displayName": "Antigravity Pulse",
-  "version": "1.0.0",
-  "description": "Antigravity 实时任务脉搏、Swarm 子代理拓扑、模型用量统计与上下文瘦身诊断监控盘。",
+  "version": "1.1.0",
+  "description": "Bilingual (EN/ZH) real-time task monitor, Swarm topology tracker, multi-model token analytics, and context diagnostics sidecar for Antigravity. / Antigravity 中英双语实时任务脉搏、Swarm 子代理拓扑、多模型用量统计与上下文瘦身诊断监控盘。",
   "suggestedPrompts": [
-    "打开 Antigravity Pulse 监控大盘",
-    "查看当前任务进度与子代理状态",
-    "统计近期各模型 Token 消耗与调用次数",
-    "分析会话上下文膨胀并排查任务卡死"
+    "Open the Antigravity Pulse monitor dashboard / 打开 Antigravity Pulse 监控大盘",
+    "Check active tasks, subagents, and Swarm status / 查看当前任务进度与子代理状态",
+    "Analyze per-model token usage and call counts / 统计近期各模型 Token 消耗与调用次数",
+    "Diagnose context window growth and stalled tasks / 分析会话上下文膨胀并排查任务卡死"
   ]
 }

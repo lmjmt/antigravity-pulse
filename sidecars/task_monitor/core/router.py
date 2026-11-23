@@ -7,6 +7,7 @@ import threading
 import urllib.parse
 
 from core.config import normalize_time_range
+from core.i18n import normalize_lang
 
 _STATIC_MIME_TYPES = {
     ".css": "text/css; charset=utf-8",
@@ -124,7 +125,7 @@ def _safe_script_json(obj):
     )
 
 
-def dispatch_get(path, qs, analytics_engine, multi_task_manager, asset_store, code_version="", reload_error=None):
+def dispatch_get(path, qs, analytics_engine, multi_task_manager, asset_store, code_version="", reload_error=None, accept_language=""):
     """Route GET requests for API endpoints, static assets, and hydrated HTML UI."""
     if path.startswith("/static/"):
         asset = asset_store.get_static_asset(path[len("/static/"):])
@@ -134,6 +135,7 @@ def dispatch_get(path, qs, analytics_engine, multi_task_manager, asset_store, co
 
     task_id = qs.get("task_id", [None])[0]
     time_range = normalize_time_range(qs.get("range", ["all"])[0])
+    lang = normalize_lang(qs.get("lang", [None])[0], accept_language=accept_language)
     default_cid = task_id or os.environ.get("ANTIGRAVITY_CONVERSATION_ID") or None
 
     ui_html, ui_ver = asset_store.get_index_html()
@@ -142,6 +144,7 @@ def dispatch_get(path, qs, analytics_engine, multi_task_manager, asset_store, co
     if path == "/api/health":
         return 200, "application/json; charset=utf-8", _json_bytes({
             "ok": reload_error is None,
+            "lang": lang,
             "code_version": full_version,
             "core_version": code_version,
             "ui_version": ui_ver,
@@ -153,14 +156,16 @@ def dispatch_get(path, qs, analytics_engine, multi_task_manager, asset_store, co
         })
     if path == "/api/session/context_timeline":
         cid = qs.get("cid", [default_cid])[0]
-        return 200, "application/json; charset=utf-8", _json_bytes(analytics_engine.analyze_context_timeline(cid))
+        return 200, "application/json; charset=utf-8", _json_bytes(
+            analytics_engine.analyze_context_timeline(cid, lang=lang)
+        )
     if path == "/api/sessions":
         return 200, "application/json; charset=utf-8", _json_bytes(
-            analytics_engine.collect_sessions_overview(default_cid, time_range=time_range)
+            analytics_engine.collect_sessions_overview(default_cid, time_range=time_range, lang=lang)
         )
     if path == "/api/multi_task":
         return 200, "application/json; charset=utf-8", _json_bytes(
-            multi_task_manager.collect_multi_task_report(task_id, time_range=time_range)
+            multi_task_manager.collect_multi_task_report(task_id, time_range=time_range, lang=lang)
         )
     if path == "/api/task_steps":
         cid = qs.get("cid", [default_cid])[0]
@@ -169,23 +174,24 @@ def dispatch_get(path, qs, analytics_engine, multi_task_manager, asset_store, co
         raw_lim = qs.get("limit", [None])[0]
         lim = int(raw_lim) if (raw_lim is not None and str(raw_lim).isdigit()) else 30
         return 200, "application/json; charset=utf-8", _json_bytes(
-            multi_task_manager.get_task_steps_window(cid, target_step=target_step, limit=lim)
+            multi_task_manager.get_task_steps_window(cid, target_step=target_step, limit=lim, lang=lang)
         )
     if path == "/api/analytics":
         return 200, "application/json; charset=utf-8", _json_bytes(
-            analytics_engine.collect_analytics(time_range=time_range)
+            analytics_engine.collect_analytics(time_range=time_range, lang=lang)
         )
 
     known_ana = qs.get("known_ana", [None])[0]
     known_sess = qs.get("known_sess", [None])[0]
-    mt_report = multi_task_manager.collect_multi_task_report(task_id, time_range=time_range)
-    ana_report = analytics_engine.collect_analytics(time_range=time_range)
-    sess_report = analytics_engine.collect_sessions_overview(default_cid, time_range=time_range)
+    mt_report = multi_task_manager.collect_multi_task_report(task_id, time_range=time_range, lang=lang)
+    ana_report = analytics_engine.collect_analytics(time_range=time_range, lang=lang)
+    sess_report = analytics_engine.collect_sessions_overview(default_cid, time_range=time_range, lang=lang)
 
     payload = {
         "code_version": full_version,
         "reload_error": reload_error,
         "time_range": time_range,
+        "lang": lang,
         "multi_task": mt_report,
         "analytics": None if (path == "/api/all" and known_ana and ana_report.get("sig") == known_ana) else ana_report,
         "sessions_overview": None if (path == "/api/all" and known_sess and sess_report.get("sig") == known_sess) else sess_report,

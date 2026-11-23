@@ -3,6 +3,7 @@
 import re
 
 UNKNOWN_MODEL_LABEL = "未记录 (历史日志)"
+UNKNOWN_MODEL_LABEL_EN = "Unrecorded (Legacy)"
 MODEL_SEL_RE = re.compile(r"Model Selection`\s+from\s+(.+?)\s+to\s+(.+?)(?:\.\s|\.$|\r?\n|$)")
 EFFORT_TAGS = {"xhigh", "high", "medium", "low", "minimal", "thinking", "fast"}
 
@@ -17,8 +18,15 @@ FAMILY_COLORS = {
     "Orchestrator": "#8b5cf6",
     "GPT": "#10b981",
     "其他": "#06b6d4",
+    "Other": "#06b6d4",
     "未记录": "#94a3b8",
+    "Unrecorded": "#94a3b8",
 }
+
+
+def get_unknown_model_label(lang="zh"):
+    """Return localized fallback label for planner calls without recorded model metadata."""
+    return UNKNOWN_MODEL_LABEL_EN if lang == "en" else UNKNOWN_MODEL_LABEL
 
 
 def normalize_model_name(raw):
@@ -63,10 +71,10 @@ def normalize_model_name(raw):
     return " ".join(parts).strip()
 
 
-def get_model_family(name):
+def get_model_family(name, lang="zh"):
     """Map normalized model display name to high-level vendor/family bucket."""
-    if not name or name == UNKNOWN_MODEL_LABEL:
-        return "未记录"
+    if not name or name in (UNKNOWN_MODEL_LABEL, UNKNOWN_MODEL_LABEL_EN):
+        return "Unrecorded" if lang == "en" else "未记录"
     low = name.lower()
     if low.startswith("gemini"):
         return "Gemini"
@@ -76,4 +84,4 @@ def get_model_family(name):
         return "GPT"
     if low.startswith("orchestrator"):
         return "Orchestrator"
-    return "其他"
+    return "Other" if lang == "en" else "其他"

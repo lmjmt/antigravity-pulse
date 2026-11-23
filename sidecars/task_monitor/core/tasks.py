@@ -19,6 +19,7 @@ from core.formatting import (
     parse_step_exit_code,
     stat_sig,
 )
+from core.i18n import normalize_lang, tr
 from core.storage import (
     fetch_merged_conversations,
     find_transcript_path,
@@ -90,14 +91,18 @@ class AntigravityMultiTaskManager:
         return result
 
     @staticmethod
-    def _format_tool_action(tc):
+    def _format_tool_action(tc, lang="zh"):
         """Format a tool_call dictionary into (tool_name, args_preview, full_action)."""
         tool_name = tc.get("name") or ""
         args = tc.get("args") or {}
         if tool_name == "swarm_wait":
             since = args.get("since")
             suffix = f" · after #{since}" if since is not None else ""
-            return tool_name, str(since or ""), f"🐝 休眠等待 Swarm 消息唤醒{suffix}"
+            return tool_name, str(since or ""), tr(
+                lang,
+                f"🐝 休眠等待 Swarm 消息唤醒{suffix}",
+                f"🐝 Waiting for Swarm message{suffix}",
+            )
         args_preview = (
             args.get("toolSummary")
             or args.get("CommandLine")
@@ -112,7 +117,7 @@ class AntigravityMultiTaskManager:
         return tool_name, clean_args, f"{tool_name}: {clean_args}"
 
     @classmethod
-    def _summarize_step(cls, st, prev_st=None):
+    def _summarize_step(cls, st, prev_st=None, lang="zh"):
         """Convert a verbose transcript step dictionary into a slim UI-ready summary."""
         stype = st.get("type") or ""
         tool_calls = st.get("tool_calls") or []
@@ -125,9 +130,13 @@ class AntigravityMultiTaskManager:
 
         if tool_calls:
             tc0 = tool_calls[0]
-            tool_name, clean_args, _ = cls._format_tool_action(tc0)
+            tool_name, clean_args, _ = cls._format_tool_action(tc0, lang=lang)
             is_swarm_wait = any(tc.get("name") == "swarm_wait" for tc in tool_calls)
-            extra = f" (+{len(tool_calls) - 1}个并行调用)" if len(tool_calls) > 1 else ""
+            extra = (
+                tr(lang, f" (+{len(tool_calls) - 1}个并行调用)", f" (+{len(tool_calls) - 1} parallel)")
+                if len(tool_calls) > 1
+                else ""
+            )
             preview_str = f"{clean_args}{extra}".strip()
             call_lines = []
             for tc in tool_calls:
@@ -138,7 +147,7 @@ class AntigravityMultiTaskManager:
                     t_args = str(tc.get("args") or {})
                 call_lines.append(f"[{t_n}]\n{t_args}")
             thinking = str(st.get("thinking") or "").strip()
-            head_th = f"思考摘要: {thinking[:220]}\n\n" if thinking else ""
+            head_th = tr(lang, f"思考摘要: {thinking[:220]}\n\n", f"Thinking: {thinking[:220]}\n\n") if thinking else ""
             detail_str = f"{head_th}" + "\n\n".join(call_lines)
         elif stype in (
             "GENERIC", "RUN_COMMAND", "VIEW_FILE", "CODE_ACTION",
@@ -151,10 +160,12 @@ class AntigravityMultiTaskManager:
             prev_wait = any(tc.get("name") == "swarm_wait" for tc in prev_tcs)
             is_swarm_wait = ("Waiting for a message" in clean_body) or prev_wait
             if is_swarm_wait:
-                preview_str = "进入 swarm_wait 等待唤醒"
+                preview_str = tr(lang, "进入 swarm_wait 等待唤醒", "Entered swarm_wait")
             else:
                 trimmed = re.sub(r"^Command exited with code \d+\s*(?:Command output:)?\s*", "", clean_body).strip()
-                preview_str = trimmed or ("已完成" if exit_code in (None, 0) else f"退出码 {exit_code}")
+                done_lbl = tr(lang, "已完成", "Completed")
+                err_lbl = tr(lang, f"退出码 {exit_code}", f"Exit code {exit_code}")
+                preview_str = trimmed or (done_lbl if exit_code in (None, 0) else err_lbl)
             detail_str = raw_content.strip() or clean_body
         elif stype == "USER_INPUT":
             cleaned = clean_user_prompt(st.get("content", ""), max_len=600)
@@ -183,14 +194,14 @@ class AntigravityMultiTaskManager:
         }
 
     @classmethod
-    def _summarize_steps_list(cls, raw_steps):
+    def _summarize_steps_list(cls, raw_steps, lang="zh"):
         out = []
         for idx, st in enumerate(raw_steps or []):
             prev_st = raw_steps[idx - 1] if idx > 0 else None
-            out.append(cls._summarize_step(st, prev_st=prev_st))
+            out.append(cls._summarize_step(st, prev_st=prev_st, lang=lang))
         return out
 
-    def get_subagents(self, parent_conversation_id, swarm_members=None, children_map=None):
+    def get_subagents(self, parent_conversation_id, swarm_members=None, children_map=None, lang="zh"):
         subagents = []
         seen_cids = set()
 
@@ -201,8 +212,8 @@ class AntigravityMultiTaskManager:
                     continue
                 seen_cids.add(rcid)
                 m_meta = swarm_members.get(rcid) if swarm_members else None
-                children = self.get_subagents(rcid, swarm_members=swarm_members, children_map=children_map)
-                details = self.evaluate_task_node(r, swarm_member_meta=m_meta, include_steps=False)
+                children = self.get_subagents(rcid, swarm_members=swarm_members, children_map=children_map, lang=lang)
+                details = self.evaluate_task_node(r, swarm_member_meta=m_meta, include_steps=False, lang=lang)
                 subagents.append({
                     "conversation_id": rcid,
                     "agent_name": r.get("agent_name"),
@@ -250,13 +261,14 @@ class AntigravityMultiTaskManager:
         ))
         return subagents
 
-    def _inspect_transcript_tail(self, steps):
+    def _inspect_transcript_tail(self, steps, lang="zh"):
         """Extract latest action, thinking, swarm_wait state, timestamp, and step count from transcript tail."""
+        idle_action = tr(lang, "空闲就绪", "Idle / Ready")
         if not steps:
             return {
                 "last_step": None,
                 "last_activity_dt": None,
-                "current_action": "空闲就绪",
+                "current_action": idle_action,
                 "current_tool": None,
                 "current_args_preview": "",
                 "current_thinking": "",
@@ -289,7 +301,7 @@ class AntigravityMultiTaskManager:
                 current_thinking = str(s["thinking"]).strip().replace(chr(10), " ")[:300]
                 break
 
-        current_action = "空闲就绪"
+        current_action = idle_action
         current_tool = None
         current_args_preview = ""
         is_swarm_waiting = False
@@ -298,7 +310,7 @@ class AntigravityMultiTaskManager:
         tool_calls = meaningful.get("tool_calls", [])
         if tool_calls:
             tc = tool_calls[-1]
-            current_tool, current_args_preview, current_action = self._format_tool_action(tc)
+            current_tool, current_args_preview, current_action = self._format_tool_action(tc, lang=lang)
             if current_tool == "swarm_wait":
                 is_swarm_waiting = True
         elif stype == "GENERIC":
@@ -309,20 +321,28 @@ class AntigravityMultiTaskManager:
                 since = (prev_wait.get("args") or {}).get("since") if prev_wait else None
                 suffix = f" · after #{since}" if since is not None else ""
                 current_tool = "swarm_wait"
-                current_action = f"🐝 休眠等待 Swarm 消息唤醒{suffix}"
+                current_action = tr(lang, f"🐝 休眠等待 Swarm 消息唤醒{suffix}", f"🐝 Waiting for Swarm message{suffix}")
             else:
                 prev_tool_name = prev_tcs[-1].get("name") if prev_tcs else ""
                 exit_code = parse_step_exit_code(meaningful.get("content", ""))
                 if exit_code is not None and exit_code != 0:
-                    prefix = f"❌ {prev_tool_name or '命令'} 失败(码 {exit_code}): "
+                    prefix = tr(
+                        lang,
+                        f"❌ {prev_tool_name or '命令'} 失败(码 {exit_code}): ",
+                        f"❌ {prev_tool_name or 'Command'} failed (code {exit_code}): ",
+                    )
                 else:
-                    prefix = f"✔ {prev_tool_name} 返回: " if prev_tool_name else "✔ 工具返回: "
-                body_preview = clean_body[:85] if clean_body else "已完成"
+                    prefix = (
+                        tr(lang, f"✔ {prev_tool_name} 返回: ", f"✔ {prev_tool_name}: ")
+                        if prev_tool_name
+                        else tr(lang, "✔ 工具返回: ", "✔ Tool output: ")
+                    )
+                body_preview = clean_body[:85] if clean_body else tr(lang, "已完成", "Completed")
                 current_action = f"{prefix}{body_preview}"
         elif stype == "USER_INPUT":
-            current_action = "接收用户指令，等待规划..."
+            current_action = tr(lang, "接收用户指令，等待规划...", "Received prompt, planning...")
         elif stype == "PLANNER_RESPONSE":
-            current_action = "生成回复 / 等待交互"
+            current_action = tr(lang, "生成回复 / 等待交互", "Generating reply / waiting")
 
         return {
             "last_step": last_step,
@@ -335,13 +355,14 @@ class AntigravityMultiTaskManager:
             "max_step_index": max_step_index,
         }
 
-    def evaluate_task_node(self, conv_dict, swarm_member_meta=None, include_steps=True):
+    def evaluate_task_node(self, conv_dict, swarm_member_meta=None, include_steps=True, lang="zh"):
+        lang = normalize_lang(lang)
         cid = conv_dict["conversation_id"]
         status_str = conv_dict.get("status", "")
         not_fully_idle = conv_dict.get("not_fully_idle", 0)
 
         steps, user_prompt = self.parse_transcript_tail(cid, max_steps=20)
-        tail = self._inspect_transcript_tail(steps)
+        tail = self._inspect_transcript_tail(steps, lang=lang)
         now_utc = datetime.now(timezone.utc)
 
         is_killed = bool(swarm_member_meta and swarm_member_meta.get("killed"))
@@ -358,42 +379,50 @@ class AntigravityMultiTaskManager:
                 inactivity_sec = max(0, (now_utc - db_dt).total_seconds())
 
         health = "IDLE"
-        health_desc = "已完成"
+        health_desc = tr(lang, "已完成", "Completed")
         alert_level = "info"
 
         if is_killed:
             health = "KILLED"
             alert_level = "info"
-            health_desc = "已销毁 (Swarm Worker Killed)"
+            health_desc = tr(lang, "已销毁 (Swarm Worker Killed)", "Killed (Swarm Worker)")
         elif is_running:
             if status_str == "CASCADE_RUN_STATUS_IDLE" and not_fully_idle == 1 and is_swarm_waiting:
                 health = "SWARM_ACTIVE"
                 alert_level = "success"
-                health_desc = "🐝 Swarm 协调等待中"
+                health_desc = tr(lang, "🐝 Swarm 协调等待中", "🐝 Swarm Coordinating")
             elif inactivity_sec > self.stuck_threshold:
                 health = "STUCK"
                 alert_level = "danger"
-                health_desc = f"⚠️ 疑似卡死！持续 {format_duration(inactivity_sec)} 无响应"
+                health_desc = tr(
+                    lang,
+                    f"⚠️ 疑似卡死！持续 {format_duration(inactivity_sec)} 无响应",
+                    f"⚠️ Possible Stall! Silent for {format_duration(inactivity_sec)}",
+                )
             elif inactivity_sec > self.warning_threshold:
                 health = "BUSY"
                 alert_level = "warning"
-                health_desc = f"耗时执行中 ({format_duration(inactivity_sec)})"
+                health_desc = tr(lang, f"耗时执行中 ({format_duration(inactivity_sec)})", f"Long step ({format_duration(inactivity_sec)})")
             else:
                 health = "RUNNING"
                 alert_level = "success"
-                health_desc = f"🟢 活跃运行中 (心跳 {format_duration(inactivity_sec)})"
+                health_desc = tr(
+                    lang,
+                    f"🟢 活跃运行中 (心跳 {format_duration(inactivity_sec)})",
+                    f"🟢 Active (beat {format_duration(inactivity_sec)})",
+                )
         else:
             last_step = tail["last_step"]
             if is_swarm_waiting:
                 health = "SWARM_WAIT"
                 alert_level = "info"
-                health_desc = "🐝 休眠待命中 (等待 Swarm 消息)"
+                health_desc = tr(lang, "🐝 休眠待命中 (等待 Swarm 消息)", "🐝 Sleeping (swarm_wait)")
             elif last_step and last_step.get("tool_calls"):
                 for tc in last_step.get("tool_calls"):
                     if tc.get("name") == "ask_question":
                         health = "WAITING_INPUT"
                         alert_level = "warning"
-                        health_desc = "⏸️ 等待用户反馈"
+                        health_desc = tr(lang, "⏸️ 等待用户反馈", "⏸️ Waiting for user input")
                         break
 
         ws_name = extract_workspace_name(conv_dict.get("workspace_uris", ""))
@@ -403,7 +432,7 @@ class AntigravityMultiTaskManager:
             _meta = self._analytics_engine._get_transcript_meta_cached(cid, datetime.now().astimezone().tzinfo)
             if _meta and _meta.get("first_user_title"):
                 raw_title = _meta["first_user_title"]
-        title = raw_title or clean_user_prompt(user_prompt, 64) or f"未命名任务 ({cid[:8]})"
+        title = raw_title or clean_user_prompt(user_prompt, 64) or tr(lang, f"未命名任务 ({cid[:8]})", f"Untitled Task ({cid[:8]})")
         db_steps = conv_dict.get("step_count", 0) or 0
         effective_steps = max(db_steps, tail["max_step_index"] + 1) if tail["max_step_index"] >= 0 else db_steps
 
@@ -426,14 +455,16 @@ class AntigravityMultiTaskManager:
             "current_tool": tail["current_tool"],
             "current_args": tail["current_args_preview"],
             "current_thinking": tail["current_thinking"],
-            "recent_steps": self._summarize_steps_list(steps[-15:]) if include_steps else [],
+            "recent_steps": self._summarize_steps_list(steps[-15:], lang=lang) if include_steps else [],
             "swarm_member": swarm_member_meta,
         }
 
-    def get_task_steps_window(self, cid, target_step=None, limit=30):
+    def get_task_steps_window(self, cid, target_step=None, limit=30, lang="zh"):
         """Load summarized steps for any task or subagent with file-signature caching."""
+        lang = normalize_lang(lang)
         if not cid:
             return {
+                "lang": lang,
                 "conversation_id": "",
                 "target_step": target_step,
                 "total_steps": 0,
@@ -458,10 +489,11 @@ class AntigravityMultiTaskManager:
             ps = parse_swarm_state(parent_cid)
             if ps:
                 swarm_meta = (ps.get("members_by_cid") or {}).get(cid)
-        node = self.evaluate_task_node(conv_dict, swarm_member_meta=swarm_meta, include_steps=False)
+        node = self.evaluate_task_node(conv_dict, swarm_member_meta=swarm_meta, include_steps=False, lang=lang)
 
         if not fpath or not os.path.exists(fpath):
             return {
+                "lang": lang,
                 "conversation_id": cid,
                 "target_step": target_step,
                 "total_steps": node.get("step_count", 0),
@@ -469,11 +501,12 @@ class AntigravityMultiTaskManager:
                 "node": node,
             }
 
+        cache_key = (fpath, lang)
         sig = stat_sig(fpath)
         summarized_all = None
         if sig is not None:
             with self._lock:
-                cached = self._steps_full_cache.get(fpath)
+                cached = self._steps_full_cache.get(cache_key)
                 if cached and cached[0] == sig:
                     summarized_all = cached[1]
 
@@ -491,10 +524,10 @@ class AntigravityMultiTaskManager:
                             continue
             except Exception:
                 pass
-            summarized_all = self._summarize_steps_list(raw_steps)
+            summarized_all = self._summarize_steps_list(raw_steps, lang=lang)
             if sig is not None:
                 with self._lock:
-                    self._steps_full_cache[fpath] = (sig, summarized_all)
+                    self._steps_full_cache[cache_key] = (sig, summarized_all)
 
         total = len(summarized_all)
         limit = max(5, min(int(limit or 30), 80))
@@ -525,6 +558,7 @@ class AntigravityMultiTaskManager:
 
         node["step_count"] = max(node.get("step_count", 0), total)
         return {
+            "lang": lang,
             "conversation_id": cid,
             "target_step": target_step,
             "total_steps": node["step_count"],
@@ -540,7 +574,7 @@ class AntigravityMultiTaskManager:
                 out.extend(self._flatten_subagents(s["children"]))
         return out
 
-    def _apply_cluster_health(self, eval_node, subagents, swarm_state):
+    def _apply_cluster_health(self, eval_node, subagents, swarm_state, lang="zh"):
         """Aggregate subagent/Swarm worker heartbeats & board posts onto the root task."""
         descendants = self._flatten_subagents(subagents)
         is_swarm = bool(swarm_state and swarm_state.get("is_swarm"))
@@ -584,7 +618,11 @@ class AntigravityMultiTaskManager:
         board_hint = ""
         if latest_posts:
             lp = latest_posts[0]
-            board_hint = f" · 最新板消息 #{lp.get('seq')} ({lp.get('agent')})"
+            board_hint = tr(
+                lang,
+                f" · 最新板消息 #{lp.get('seq')} ({lp.get('agent')})",
+                f" · board post #{lp.get('seq')} ({lp.get('agent')})",
+            )
 
         if healthy_running:
             eval_node["inactivity_sec"] = int(cluster_age)
@@ -592,42 +630,75 @@ class AntigravityMultiTaskManager:
             eval_node["alert_level"] = "success"
             if is_swarm:
                 eval_node["health"] = "SWARM_ACTIVE"
-                eval_node["health_desc"] = f"🐝 Swarm 协作运行中 ({len(healthy_running)} 活跃 / {len(waiting_workers)} 休眠 / 共 {len(descendants)} 成员)"
+                eval_node["health_desc"] = tr(
+                    lang,
+                    f"🐝 Swarm 协作运行中 ({len(healthy_running)} 活跃 / {len(waiting_workers)} 休眠 / 共 {len(descendants)} 成员)",
+                    f"🐝 Swarm Active ({len(healthy_running)} running / {len(waiting_workers)} sleeping / {len(descendants)} total)",
+                )
                 if eval_node.get("is_swarm_waiting"):
-                    eval_node["current_action"] = f"🐝 协调等待中：{len(healthy_running)} 个 Worker 活跃执行{board_hint}"
+                    eval_node["current_action"] = tr(
+                        lang,
+                        f"🐝 协调等待中：{len(healthy_running)} 个 Worker 活跃执行{board_hint}",
+                        f"🐝 Coordinating: {len(healthy_running)} workers active{board_hint}",
+                    )
             else:
                 eval_node["health"] = "RUNNING"
-                eval_node["health_desc"] = f"🟢 主从协同运行中 ({len(healthy_running)} 子代理活跃)"
+                eval_node["health_desc"] = tr(
+                    lang,
+                    f"🟢 主从协同运行中 ({len(healthy_running)} 子代理活跃)",
+                    f"🟢 Running ({len(healthy_running)} subagents active)",
+                )
         elif running_workers:
             eval_node["inactivity_sec"] = int(cluster_age)
             eval_node["inactivity_formatted"] = format_duration(cluster_age)
             if cluster_age <= self.stuck_threshold:
                 eval_node["health"] = "SWARM_ACTIVE" if is_swarm else "RUNNING"
                 eval_node["alert_level"] = "success"
-                eval_node["health_desc"] = f"🐝 Swarm 协作运行中 (消息板活跃 {format_duration(cluster_age)} 前)"
+                eval_node["health_desc"] = tr(
+                    lang,
+                    f"🐝 Swarm 协作运行中 (消息板活跃 {format_duration(cluster_age)} 前)",
+                    f"🐝 Swarm Active (board active {format_duration(cluster_age)} ago)",
+                )
             else:
                 eval_node["health"] = "STUCK"
                 eval_node["alert_level"] = "danger"
-                eval_node["health_desc"] = f"⚠️ Swarm 阻塞！活跃成员均已无响应 {format_duration(cluster_age)}"
+                eval_node["health_desc"] = tr(
+                    lang,
+                    f"⚠️ Swarm 阻塞！活跃成员均已无响应 {format_duration(cluster_age)}",
+                    f"⚠️ Swarm Stalled! Workers silent for {format_duration(cluster_age)}",
+                )
         elif is_swarm and eval_node.get("is_swarm_waiting"):
             eval_node["inactivity_sec"] = int(cluster_age)
             eval_node["inactivity_formatted"] = format_duration(cluster_age)
             if cluster_age <= self.stuck_threshold:
                 eval_node["health"] = "SWARM_ACTIVE"
                 eval_node["alert_level"] = "info"
-                eval_node["health_desc"] = f"🐝 Swarm 轮次切换中 ({len(waiting_workers)} 休眠 / 最近动态 {format_duration(cluster_age)} 前)"
+                eval_node["health_desc"] = tr(
+                    lang,
+                    f"🐝 Swarm 轮次切换中 ({len(waiting_workers)} 休眠 / 最近动态 {format_duration(cluster_age)} 前)",
+                    f"🐝 Swarm Transition ({len(waiting_workers)} sleeping / active {format_duration(cluster_age)} ago)",
+                )
             else:
                 eval_node["health"] = "SWARM_WAIT"
                 eval_node["alert_level"] = "warning"
-                eval_node["health_desc"] = f"🐝 Swarm 全员休眠待命中 ({len(waiting_workers)} 成员等待唤醒, 已静默 {format_duration(cluster_age)})"
-                eval_node["current_action"] = f"🐝 协调器与成员均处于 swarm_wait 等待唤醒{board_hint}"
+                eval_node["health_desc"] = tr(
+                    lang,
+                    f"🐝 Swarm 全员休眠待命中 ({len(waiting_workers)} 成员等待唤醒, 已静默 {format_duration(cluster_age)})",
+                    f"🐝 Swarm Sleeping ({len(waiting_workers)} waiting, silent {format_duration(cluster_age)})",
+                )
+                eval_node["current_action"] = tr(
+                    lang,
+                    f"🐝 协调器与成员均处于 swarm_wait 等待唤醒{board_hint}",
+                    f"🐝 Coordinator & workers in swarm_wait{board_hint}",
+                )
 
         return eval_node
 
-    def collect_multi_task_report(self, focused_cid=None, time_range="all"):
-        range_key, _, now_local, start_utc, range_label, _ = get_time_range_bounds(time_range)
+    def collect_multi_task_report(self, focused_cid=None, time_range="all", lang="zh"):
+        lang = normalize_lang(lang)
+        range_key, _, now_local, start_utc, range_label, _ = get_time_range_bounds(time_range, lang=lang)
         now_ts = time.time()
-        cache_key = (range_key, focused_cid)
+        cache_key = (range_key, focused_cid, lang)
         with self._lock:
             cached = self._report_cache.get(cache_key)
             if cached and (now_ts - cached[0] < 1.0):
@@ -674,11 +745,12 @@ class AntigravityMultiTaskManager:
                 c,
                 swarm_member_meta=coord_meta,
                 include_steps=(cid == focused_cid or is_run_hint),
+                lang=lang,
             )
-            subagents = self.get_subagents(cid, swarm_members=swarm_members, children_map=children_map)
+            subagents = self.get_subagents(cid, swarm_members=swarm_members, children_map=children_map, lang=lang)
             eval_node["subagents"] = subagents
             eval_node["subagents_count"] = len(subagents)
-            self._apply_cluster_health(eval_node, subagents, swarm_state)
+            self._apply_cluster_health(eval_node, subagents, swarm_state, lang=lang)
             evaluated_tasks.append(eval_node)
 
         running_tasks = [t for t in evaluated_tasks if t["is_running"]]
@@ -700,9 +772,10 @@ class AntigravityMultiTaskManager:
 
         if focused_task and not focused_task.get("recent_steps"):
             f_steps, _ = self.parse_transcript_tail(focused_task["conversation_id"], max_steps=20)
-            focused_task["recent_steps"] = self._summarize_steps_list(f_steps[-15:])
+            focused_task["recent_steps"] = self._summarize_steps_list(f_steps[-15:], lang=lang)
 
         result = {
+            "lang": lang,
             "time_range": range_key,
             "range_label": range_label,
             "summary": {

@@ -3,13 +3,13 @@
   "args": ["server.py"],
   "restart_policy": "always",
   "display_name": "Antigravity Pulse",
-  "description": "实时监控项目任务进度、子代理拓扑、防卡死诊断与多模型用量统计",
+  "description": "Bilingual (EN/ZH) real-time monitor for task progress, Swarm subagent topology, stall detection, and multi-model token telemetry. / 中英双语实时监控项目任务进度、子代理拓扑、防卡死诊断与多模型用量统计",
   "has_web_ui": true,
   "ui_config": {
     "display_name": "Antigravity Pulse",
     "views": [
       {
-        "title": "任务脉搏与效能大盘",
+        "title": "Antigravity Pulse · Telemetry & Tasks / 任务脉搏大盘",
         "path": "/",
         "entrypoint": "SIDECAR_UI_ENTRYPOINT_AUX_PANE"
       }

@@ -8,7 +8,7 @@ let cachedTaskData = null;
 let cachedAnalytics = null;
 let cachedSessions = null;
 
-const RANGE_LABEL_MAP = { today: '今天', '7d': '7天', '30d': '30天', all: '全部' };
+const VALID_TIME_RANGES = ['today', '7d', '30d', 'all'];
 
 // DSH-Context Session Filters
 let sessionSearchQuery = '';
@@ -46,13 +46,13 @@ function escHtml(str) {
 
 function formatMemberSummary(t) {
     if (t.swarm && t.swarm.is_swarm) {
-        return `🐝 ${t.swarm.active_workers}/${t.swarm.total_workers} 成员`;
+        return i18n('task.member_swarm', { active: t.swarm.active_workers, total: t.swarm.total_workers });
     }
-    return t.subagents_count > 0 ? '🌿 ' + t.subagents_count : '单体';
+    return t.subagents_count > 0 ? '🌿 ' + t.subagents_count : i18n('task.member_single');
 }
 
 function setTimeRange(rangeKey) {
-    if (!RANGE_LABEL_MAP[rangeKey]) rangeKey = 'all';
+    if (!VALID_TIME_RANGES.includes(rangeKey)) rangeKey = 'all';
     currentTimeRange = rangeKey;
     sessionDateFilter = '';
     sessionModelFilter = '';
@@ -60,9 +60,9 @@ function setTimeRange(rangeKey) {
         btn.classList.toggle('active', btn.getAttribute('data-range') === rangeKey);
     });
     const badge = document.getElementById('task-range-badge');
-    if (badge) badge.innerText = `🕒 ${RANGE_LABEL_MAP[rangeKey]}`;
+    if (badge) badge.innerText = `🕒 ${getRangeLabel(rangeKey)}`;
     const ind = document.getElementById('sync-indicator');
-    if (ind) ind.innerHTML = `<span style="color: var(--primary);">⏳ 切换至 ${RANGE_LABEL_MAP[rangeKey]}...</span>`;
+    if (ind) ind.innerHTML = `<span style="color: var(--primary);">${escHtml(i18n('nav.switching_range', { label: getRangeLabel(rangeKey) }))}</span>`;
     fetchUpdates();
 }
 

@@ -17,13 +17,13 @@ function handleServerData(data) {
     if (PAGE_CODE_VERSION && data.code_version && data.code_version !== PAGE_CODE_VERSION) {
         hasNewServerCode = true;
     }
-    if (data.time_range && RANGE_LABEL_MAP[data.time_range]) {
+    if (data.time_range && VALID_TIME_RANGES.includes(data.time_range)) {
         currentTimeRange = data.time_range;
         document.querySelectorAll('#global-time-range .tr-btn').forEach(btn => {
             btn.classList.toggle('active', btn.getAttribute('data-range') === currentTimeRange);
         });
         const badge = document.getElementById('task-range-badge');
-        if (badge) badge.innerText = `🕒 ${RANGE_LABEL_MAP[currentTimeRange]}`;
+        if (badge) badge.innerText = `🕒 ${getRangeLabel(currentTimeRange)}`;
     }
     if (data.analytics) {
         const anaSig = data.analytics.sig || data.analytics.timestamp;
@@ -58,6 +58,7 @@ function handleServerData(data) {
 }
 
 // Instant Hydration
+if (typeof applyStaticI18n === 'function') applyStaticI18n();
 if (INITIAL_PAYLOAD) {
     handleServerData(INITIAL_PAYLOAD);
 }
@@ -74,10 +75,11 @@ requestAnimationFrame(animateSyncBar);
 async function fetchUpdates() {
     syncCycleStart = Date.now();
     const reqRange = currentTimeRange;
+    const reqLang = currentLang;
     try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3500);
-        let url = `/api/all?range=${encodeURIComponent(reqRange)}&_t=${Date.now()}`;
+        let url = `/api/all?range=${encodeURIComponent(reqRange)}&lang=${encodeURIComponent(reqLang)}&_t=${Date.now()}`;
         if (selectedTaskId && !autoFollow) url += `&task_id=${encodeURIComponent(selectedTaskId)}`;
         if (lastAnalyticsSig) url += `&known_ana=${encodeURIComponent(lastAnalyticsSig)}`;
         if (lastSessionsSig) url += `&known_sess=${encodeURIComponent(lastSessionsSig)}`;
@@ -89,20 +91,20 @@ async function fetchUpdates() {
 
         if (res.ok) {
             const data = await res.json();
-            if (reqRange !== currentTimeRange) return;
+            if (reqRange !== currentTimeRange || reqLang !== currentLang) return;
             handleServerData(data);
             if (hasNewServerCode) {
                 document.getElementById('sync-indicator').innerHTML = `
-                    <button type="button" class="btn-icon" style="padding:3px 10px;font-size:11.5px;min-height:28px;border-color:var(--primary);color:var(--primary);font-weight:600;" onclick="location.reload()">🆕 新版本可用 · 点此或 Cmd+R 重载</button>
+                    <button type="button" class="btn-icon" style="padding:3px 10px;font-size:11.5px;min-height:28px;border-color:var(--primary);color:var(--primary);font-weight:600;" onclick="location.reload()">${escHtml(t('nav.new_version'))}</button>
                 `;
             } else {
                 document.getElementById('sync-indicator').innerHTML = `
-                    <span style="color: var(--success);">🟢 同步完成</span> · ${new Date().toLocaleTimeString()}
+                    <span style="color: var(--success);">${escHtml(t('nav.synced'))}</span> · ${new Date().toLocaleTimeString()}
                 `;
             }
         }
     } catch (err) {
-        document.getElementById('sync-indicator').innerHTML = `<span style="color: var(--danger);">⚠️ 重连中...</span>`;
+        document.getElementById('sync-indicator').innerHTML = `<span style="color: var(--danger);">${escHtml(t('nav.reconnecting'))}</span>`;
     }
 }
 

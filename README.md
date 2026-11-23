@@ -1,93 +1,103 @@
+**English** | [简体中文](README.zh-CN.md)
+
 # Antigravity Pulse
 
-**Antigravity Pulse** 是面向 **Google Antigravity IDE / CLI** 的轻量级、零外部依赖插件与可观测性监控 Sidecar。它在辅助侧边栏（Auxiliary Pane）原生运行，提供 **多任务与 Swarm 子代理实时拓扑追踪**、**多模型 Token/调用量统计**、**全局效能分析** 以及 **单会话上下文膨胀诊断**，并支持前后端代码热重载（`Cmd + R` 即可零重启生效，解析缓存零丢失）。
+**Antigravity Pulse** is a lightweight, zero-dependency observability plugin and live telemetry sidecar for **Google Antigravity IDE / CLI**. Running natively inside the Auxiliary Pane, it delivers **bilingual UI and API support (English & Simplified Chinese)**, **real-time multi-task & Swarm subagent topology tracking**, **per-model Token/call analytics**, **global efficiency telemetry**, and **per-session context-growth diagnostics** — all with atomic hot-reloading (`Cmd + R`) and zero-loss parse caching.
 
 ---
 
-## 核心特性
+## Core Features
 
-1. **🤖 模型使用量统计（无感 4 级归因 + 双环 + 7 列可排序数据表）**
-   - 自动按「步骤显式 `model` 字段 -> Swarm `members.json` 契约 -> `<USER_SETTINGS_CHANGE>` 设置变更事件（含首轮前向回填）-> 子代理父级继承」四级优先级精准归因模型。
-   - 自动剥离思考/速度档位标签（如 High / XHigh / Thinking），按基础模型聚合对比 **Token 消耗**、**调用次数**、**均耗/次**、**缓存命中率**、**会话数** 与 **预估费用**，并支持点击模型行直接筛选下方对应会话。
-2. **📊 全局效能大盘 & DSH 会话概览**
-   - 支持 **今天 / 7天 / 30天 / 全部** 四档时间范围联动，覆盖 6 项核心 KPI、分时/按天/按周双轴趋势图、Token 构成环、耗时构成环与 168 天（24 周）活跃度热力图。
-   - 会话卡片展示上下文占用率仪表环、工作区芯片过滤、模型徽标检索与跨月份快速定位，并统一修复 SQLite `0001-01-01` 零值时间戳回退。
-3. **📈 单会话上下文演进与瘦身诊断抽屉**
-   - 基于真实计费增量与历史文本字节估算（`_est_tokens`）绘制每轮上下文走势曲线，精准识别 `<CONTEXT_SUMMARY>` 压缩节点、突发膨胀（`> 25k` Tokens）、超大工具输出与重复全量读盘，一键生成 `/compact` 指令或 Markdown 诊断简报。
-4. **🐝 实时多任务与 Swarm 并发监控（防卡死预警）**
-   - 提供 **聚焦追踪**、**并发看板**、**对比矩阵** 三视图，支持 `swarm_wait` 状态识别、Swarm 消息板活跃时间融合以及 `WARNING` / `STUCK` 心跳超时告警。
-5. **⚡ 原子热重载与纵深安全**
-   - `server.py` 锁定 IDE 分配端口、PID 与 Auth Token；`monitor_core.py` 刷新 `core.*` 子模块并通过 `CACHE_SCHEMA_VERSION` 自动无缝迁移全部解析缓存。
-   - 仅允许本地回环 Origin（`127.0.0.1` / `localhost`）CORS 访问；静态资源服务严格防御目录穿越（仅放行白名单扩展名）；前端所有动态 DOM/属性均经 `escHtml()` 编码且内联 JSON 经过 `</script>` 注入转义。
+1. **🌐 Bilingual UI & API (`EN / 中`, `?lang=en|zh`, `Accept-Language`)**
+   - Instant **`EN / 中`** switcher in the top navigation bar toggles static labels, tooltips, KPIs, model usage tables, task monitors, context drawers, and Markdown diagnostic reports in place without page reload.
+   - All HTTP routes (`/`, `/api/all`, `/api/analytics`, `/api/sessions`, `/api/multi_task`, `/api/session/context_timeline`, `/api/task_steps`) respect `?lang=en|zh` query parameters and fall back to the `Accept-Language` request header.
+   - Transcript & SQLite parse caches (`CACHE_SCHEMA_VERSION = "v4"`) stay completely language-agnostic — switching languages takes **0 ms of re-parsing** and relies purely on volatile state (zero `localStorage` usage).
+2. **🤖 Model Usage Telemetry (4-Tier Attribution + Dual Donuts + Sortable Table)**
+   - Attributes every planner invocation via a 4-tier hierarchy: explicit step `model` field -> Swarm `members.json` roster -> `<USER_SETTINGS_CHANGE>` events (including first-turn forward backfill) -> parent subagent inheritance.
+   - Strips thinking/speed modifiers (e.g., High / XHigh / Thinking) to aggregate **Token consumption**, **call counts**, **avg tokens/call**, **cache hit rate**, **sessions**, and **estimated cost**, with one-click session cross-filtering per model row.
+3. **📊 Global Efficiency Dashboard & Session Overview**
+   - Supports four global time windows (**Today / 7d / 30d / All**), covering 6 KPI cards, dynamic usage trend charts, token composition & time-breakdown donuts, and a 168-day (24-week) activity heatmap.
+   - Session cards include context occupancy rings, workspace/month/model filtering, search, and unified handling for legacy SQLite `0001-01-01` zero timestamps.
+4. **📈 Per-Session Context Evolution & Diagnostics Drawer**
+   - Plots per-turn context growth using real billing deltas and byte-based real-text fallbacks (`_est_tokens`), detects `<CONTEXT_SUMMARY>` compaction drops, single-turn spikes (`> 25k` tokens), oversized tool outputs, and duplicate full-file reads, and copies ready-to-use `/compact` commands or Markdown diagnosis reports.
+5. **🐝 Live Multi-Task & Swarm Concurrency Monitor (Stall Detection)**
+   - Provides **Focus**, **Grid**, and **Matrix** views with `swarm_wait` detection, Swarm message-board activity merging, step-stream inspection, and `WARNING` / `STUCK` heartbeat alerts.
+6. **⚡ Atomic Hot-Reload & Defense-in-Depth Security**
+   - `server.py` locks the IDE-assigned port, PID, and auth token; `monitor_core.py` reloads `core.*` modules atomically with automatic `CACHE_SCHEMA_VERSION` cache migration.
+   - Enforces loopback-only CORS (`127.0.0.1` / `localhost`), strict path-traversal rejection and allowlisted extensions in `/static/*`, `escHtml()` encoding on dynamic DOM fragments/attributes, and `</script>`-safe JSON hydration.
 
 ---
 
-## 架构设计
+## Architecture
 
 ```mermaid
 flowchart TD
-    IDE["Antigravity IDE / CLI<br/>Auxiliary Pane Sidecar"] -->|"GET / & /api/* & /static/*"| Host["server.py<br/>HTTP 宿主壳 (CORS · 端口锁定 · 多文件热加载)"]
-    Host -->|"signature mismatch -> atomic reload"| Facade["monitor_core.py<br/>热重载门面 + 缓存迁移器"]
-    Facade --> Router["core/router.py<br/>API 路由 · 首屏注入 · 安全静态服务"]
-    Router --> Assets["web/index.html + styles.css + js/*.js<br/>零构建原生 ES6 前端"]
-    Router --> Ana["core/analytics.py & timeline.py<br/>效能指标 · 模型归因 · 上下文诊断"]
-    Router --> Tasks["core/tasks.py & swarm.py<br/>多任务调度 · Swarm 状态与防卡死评估"]
-    Ana & Tasks --> Storage["core/storage.py & models.py & formatting.py<br/>SQLite WAL 签名缓存 · 名称规整 · 通用工具"]
-    Storage --> DataSources["~/.gemini/{antigravity,antigravity-cli,antigravity-ide}<br/>conversation_summaries.db · brain/ · presence/"]
+    IDE["Antigravity IDE / CLI (Auxiliary Pane Sidecar)"] -->|"GET / /api/* /static/* (?lang=en|zh, Accept-Language)"| Host["server.py (HTTP Host · Loopback CORS · Multi-file Hot Reloader)"]
+    Host -->|"signature mismatch -> atomic reload"| Facade["monitor_core.py (Reload Facade + v4 Cache Migrator)"]
+    Facade --> Router["core/router.py & core/i18n.py (Routing · Lang Resolution · Static Assets)"]
+    Router --> Assets["web/index.html + styles.css + js/*.js (7 Zero-Build ES6 Modules incl. i18n.js)"]
+    Router --> Ana["core/analytics.py & core/timeline.py (Metrics · Model Attribution · Context Diagnostics)"]
+    Router --> Tasks["core/tasks.py & core/swarm.py (Multi-Task Engine · Swarm · Stall Detection)"]
+    Ana & Tasks --> Storage["core/storage.py & core/models.py & core/formatting.py (SQLite WAL Cache · Helpers)"]
+    Storage --> DataSources["~/.gemini/{antigravity,antigravity-cli,antigravity-ide} (SQLite · brain/ · presence/)"]
 ```
 
 ---
 
-## 目录结构
+## Directory Structure
 
 ```text
 antigravity-pulse/
-├── plugin.json                        # Antigravity 插件清单
-├── hooks.json                         # 会话启动 Hook 声明
-├── hooks/on_session_start.py          # 自动注入监控快捷入口
-├── rules/AGENTS.md                    # 智能体自动挂载 Sidecar 规范
-├── skills/antigravity-pulse/SKILL.md  # 技能说明
+├── README.md                          # English documentation (default)
+├── README.zh-CN.md                    # Simplified Chinese documentation
+├── CONTRIBUTING.md                    # Bilingual contributor guide
+├── CHANGELOG.md                       # Release notes (v1.1.0)
+├── plugin.json                        # Antigravity plugin manifest
+├── hooks.json                         # Session start hook declaration
+├── hooks/on_session_start.py          # Injects dashboard launch pill on session start
+├── rules/AGENTS.md                    # Sidecar auto-surfacing rule
+├── skills/antigravity-pulse/SKILL.md  # Skill definition
 ├── scripts/
-│   ├── install.sh                     # 安装新插件或同步 Sidecar 至已有插件
-│   └── check.sh                       # 语法编译、JS 检查、单元测试与隐私扫描
-├── tests/                             # 基于临时目录的纯离线单元测试
+│   ├── install.sh                     # Install plugin or hot-sync Sidecar to existing plugin
+│   └── check.sh                       # Bytecode, JS syntax, unittest, and privacy scan
+├── tests/                             # Offline unit tests (including tests/test_i18n.py)
 └── sidecars/task_monitor/
-    ├── sidecar.json                   # Sidecar 启动与侧边栏视图配置
-    ├── server.py                      # 常驻 HTTP 宿外壳
-    ├── monitor_core.py                # 模块化热重载门面
-    ├── core/                          # 分层后端包 (10 个职责单一模块)
-    └── web/                           # 原生前端 (index.html + styles.css + 6 个 JS 模块)
+    ├── sidecar.json                   # Sidecar entrypoint & auxiliary pane config
+    ├── server.py                      # Resident HTTP host shell
+    ├── monitor_core.py                # Modular reload facade & cache migrator
+    ├── core/                          # Layered Python backend (11 single-responsibility modules, incl. i18n.py)
+    └── web/                           # Zero-build frontend (index.html + styles.css + 7 JS modules, incl. i18n.js)
 ```
 
 ---
 
-## 快速安装
+## Quick Install
 
-### 方式一：作为独立开源插件安装
+### Option 1: Install as a Standalone Plugin
 ```bash
 git clone <your-git-repo-url>/antigravity-pulse.git
 cd antigravity-pulse
 ./scripts/install.sh
 ```
-安装完成后在 Antigravity Customizations 面板启用 **Antigravity Pulse**，对话中点击 `[⚡ Antigravity Pulse 监控盘](sidecar://antigravity-pulse/task_monitor/)` 即可打开。
+Enable **Antigravity Pulse** in the Antigravity Customizations panel and open `[⚡ Antigravity Pulse](sidecar://antigravity-pulse/task_monitor/)` from any chat.
 
-### 方式二：热同步 Sidecar 至已有本地 `task-monitor` 插件
+### Option 2: Hot-Sync Sidecar into an Existing `task-monitor` Plugin
 ```bash
 ./scripts/install.sh --sync-sidecar task-monitor
 ```
-在当前插件 Sidecar 已运行状态下执行后，仅需在侧边栏按 **`Cmd + R`** 即可热加载新架构且保留既有解析缓存。
+While the existing sidecar process keeps running, press **`Cmd + R`** in the Auxiliary Pane to hot-reload the updated backend and UI with zero cache loss.
 
 ---
 
-## 本地校验与测试
+## Local Verification & Testing
 
-项目无任何第三方依赖，运行期仅需 Python `3.9+`：
+Zero third-party dependencies — requires only Python `3.9+` at runtime:
 
 ```bash
 ./scripts/check.sh
 ```
 
-支持通过环境变量 `ANTIGRAVITY_DATA_DIRS` 指定自定义的 Antigravity 数据根目录列表（以系统路径分隔符 `:` 分隔），便于多实例分析或隔离测试：
+Override scanned Antigravity data roots via `ANTIGRAVITY_DATA_DIRS` (`:`-separated on POSIX):
 
 ```bash
 ANTIGRAVITY_DATA_DIRS="/path/to/profile1:/path/to/profile2" python3 sidecars/task_monitor/server.py
@@ -95,6 +105,6 @@ ANTIGRAVITY_DATA_DIRS="/path/to/profile1:/path/to/profile2" python3 sidecars/tas
 
 ---
 
-## 开源协议
+## License
 
-本项目基于 [MIT License](LICENSE) 开源。
+Released under the [MIT License](LICENSE).

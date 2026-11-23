@@ -6,7 +6,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antigravity Pulse — 任务进度与模型效能监控盘</title>
+    <title data-i18n="page.title">Antigravity Pulse — 任务进度与模型效能监控盘</title>
     <link rel="stylesheet" href="/static/styles.css?v=__UI_VERSION__">
 </head>
 <body data-theme="light">
@@ -19,28 +19,29 @@
                 </div>
                 <div class="tabs">
                     <button class="tab-btn active" id="tab-analytics-btn" onclick="switchMainTab('analytics')">
-                        📊 效能与会话大盘
+                        <span data-i18n="tab.analytics">📊 效能与会话大盘</span>
                     </button>
                     <button class="tab-btn" id="tab-task-btn" onclick="switchMainTab('task')">
-                        ⚡ 实时任务监控 <span id="nav-running-badge" class="badge badge-success" style="font-size: 9px; padding: 1px 6px;">0 活跃</span>
+                        <span data-i18n="tab.task">⚡ 实时任务监控</span> <span id="nav-running-badge" class="badge badge-success" style="font-size: 9px; padding: 1px 6px;">0 活跃</span>
                     </button>
                 </div>
             </div>
             <div class="nav-right">
-                <div class="time-range-pills" id="global-time-range" role="group" title="全局时间范围筛选">
-                    <button type="button" class="tr-btn" data-range="today" onclick="setTimeRange('today')">今天</button>
-                    <button type="button" class="tr-btn" data-range="7d" onclick="setTimeRange('7d')">7天</button>
-                    <button type="button" class="tr-btn" data-range="30d" onclick="setTimeRange('30d')">30天</button>
-                    <button type="button" class="tr-btn active" data-range="all" onclick="setTimeRange('all')">全部</button>
+                <div class="time-range-pills" id="global-time-range" role="group" data-i18n-title="nav.range_title" title="全局时间范围筛选">
+                    <button type="button" class="tr-btn" data-range="today" data-i18n="range.today" onclick="setTimeRange('today')">今天</button>
+                    <button type="button" class="tr-btn" data-range="7d" data-i18n="range.7d" onclick="setTimeRange('7d')">7天</button>
+                    <button type="button" class="tr-btn" data-range="30d" data-i18n="range.30d" onclick="setTimeRange('30d')">30天</button>
+                    <button type="button" class="tr-btn active" data-range="all" data-i18n="range.all" onclick="setTimeRange('all')">全部</button>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px;" title="1.5s 实时自动同步 · Cmd+R 自动加载最新代码">
+                <div style="display: flex; align-items: center; gap: 6px;" data-i18n-title="nav.sync_badge_title" title="1.5s 实时自动同步 · Cmd+R 自动加载最新代码">
                     <div class="sync-bar-wrap"><div id="sync-bar-progress" class="sync-bar-fill"></div></div>
-                    <span id="sync-indicator" style="font-size: 11px; color: var(--muted);">1.5s 同步中</span>
+                    <span id="sync-indicator" data-i18n="nav.syncing_initial" style="font-size: 11px; color: var(--muted);">1.5s 同步中</span>
                 </div>
-                <button class="btn-icon btn-nav-icon" onclick="toggleTheme()" title="切换明暗主题">🌓</button>
-                <button class="btn-icon btn-nav-icon" onclick="manualSync()" title="强制刷新数据">🔄</button>
-                <button class="btn-icon btn-reload" onclick="location.reload()" title="硬重载页面 (Cmd+R)">
-                    <span class="reload-glyph">⟳</span><span>重载</span>
+                <button class="btn-icon btn-nav-icon" id="lang-toggle-btn" onclick="toggleLanguage()" style="font-size: 11px; font-weight: 700; min-width: 34px; padding: 0 7px;" data-i18n-title="nav.lang_title" title="Switch to English (切换到英文)">EN</button>
+                <button class="btn-icon btn-nav-icon" onclick="toggleTheme()" data-i18n-title="nav.theme_title" title="切换明暗主题">🌓</button>
+                <button class="btn-icon btn-nav-icon" onclick="manualSync()" data-i18n-title="nav.sync_title" title="强制刷新数据">🔄</button>
+                <button class="btn-icon btn-reload" onclick="location.reload()" data-i18n-title="nav.reload_title" title="硬重载页面 (Cmd+R)">
+                    <span class="reload-glyph">⟳</span><span data-i18n="nav.reload_btn">重载</span>
                 </button>
             </div>
         </div>
@@ -53,46 +54,46 @@
             <div class="top-section">
                 <div class="kpi-grid">
                     <div class="card">
-                        <div class="kpi-label" id="kpi-sessions-label">全部会话</div>
+                        <div class="kpi-label" id="kpi-sessions-label" data-i18n="kpi.sessions_all">全部会话</div>
                         <div class="kpi-val" id="kpi-sessions">-</div>
-                        <div class="kpi-sub" id="kpi-sessions-sub">其中已归档 0 个</div>
+                        <div class="kpi-sub" id="kpi-sessions-sub">-</div>
                     </div>
                     <div class="card">
-                        <div class="kpi-label">Token 消耗</div>
+                        <div class="kpi-label" data-i18n="kpi.tokens">Token 消耗</div>
                         <div class="kpi-val" id="kpi-tokens">-</div>
-                        <div class="kpi-sub" id="kpi-turns-sub">轮次 -</div>
+                        <div class="kpi-sub" id="kpi-turns-sub">-</div>
                     </div>
                     <div class="card">
-                        <div class="kpi-label">预估费用</div>
+                        <div class="kpi-label" data-i18n="kpi.cost">预估费用</div>
                         <div class="kpi-val" id="kpi-cost">-</div>
-                        <div class="kpi-sub" id="kpi-cost-sub">已计价会话</div>
+                        <div class="kpi-sub" id="kpi-cost-sub" data-i18n="kpi.cost_init">已计价会话</div>
                     </div>
                     <div class="card">
-                        <div class="kpi-label">缓存命中</div>
+                        <div class="kpi-label" data-i18n="kpi.cache">缓存命中</div>
                         <div class="kpi-val" id="kpi-cache">-%</div>
-                        <div class="kpi-sub" id="kpi-cache-sub">含会话</div>
+                        <div class="kpi-sub" id="kpi-cache-sub" data-i18n="kpi.cache_init">含会话</div>
                     </div>
                     <div class="card">
-                        <div class="kpi-label">工具调用</div>
+                        <div class="kpi-label" data-i18n="kpi.tools">工具调用</div>
                         <div class="kpi-val" id="kpi-tools">-</div>
-                        <div class="kpi-sub" id="kpi-tools-sub">工具执行 -</div>
+                        <div class="kpi-sub" id="kpi-tools-sub">-</div>
                     </div>
                     <div class="card">
-                        <div class="kpi-label">活跃时长</div>
+                        <div class="kpi-label" data-i18n="kpi.duration">活跃时长</div>
                         <div class="kpi-val" id="kpi-duration">-</div>
-                        <div class="kpi-sub" id="kpi-duration-sub">模型调用 -</div>
+                        <div class="kpi-sub" id="kpi-duration-sub">-</div>
                     </div>
                 </div>
 
                 <div class="chart-card">
                     <div class="chart-header">
-                        <div class="chart-title" id="usage-chart-title"><span>📊</span> 近 7 天用量</div>
+                        <div class="chart-title" id="usage-chart-title"><span>📊</span> <span data-i18n="chart.default_title">近 7 天用量</span></div>
                         <div class="chart-legend" id="usage-chart-legend">
                             <button type="button" class="chart-toggle-btn active" id="chart-mode-tokens" onclick="setUsageChartMode('tokens')">
-                                <span class="legend-box" style="background: #3b82f6;"></span> Token · 费用
+                                <span class="legend-box" style="background: #3b82f6;"></span> <span data-i18n="chart.legend_tokens_cost">Token · 费用</span>
                             </button>
                             <button type="button" class="chart-toggle-btn" id="chart-mode-activity" onclick="setUsageChartMode('activity')">
-                                <span class="legend-box" style="background: #8b5cf6;"></span> 会话 · 步数
+                                <span class="legend-box" style="background: #8b5cf6;"></span> <span data-i18n="chart.legend_sessions_steps">会话 · 步数</span>
                             </button>
                         </div>
                     </div>
@@ -104,14 +105,14 @@
             <div class="middle-section">
                 <div class="donut-card">
                     <div class="donut-header">
-                        <div class="donut-title"><span>🍩</span> Token 统计</div>
+                        <div class="donut-title"><span>🍩</span> <span data-i18n="donut.token_stats">Token 统计</span></div>
                     </div>
                     <div class="donut-content">
                         <div class="donut-visual">
                             <svg id="donut-token-svg" viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);"></svg>
                             <div class="donut-center-text">
                                 <div class="donut-center-val" id="donut-token-center-val">-</div>
-                                <div class="donut-center-label">总用量</div>
+                                <div class="donut-center-label" data-i18n="donut.total_usage">总用量</div>
                             </div>
                         </div>
                         <div class="donut-legend-grid" id="token-legend-grid"></div>
@@ -120,15 +121,15 @@
 
                 <div class="donut-card">
                     <div class="donut-header">
-                        <div class="donut-title"><span>⏱️</span> 耗时统计</div>
-                        <div class="donut-sub" id="output-speed-val">输出速度 198 tok/s</div>
+                        <div class="donut-title"><span>⏱️</span> <span data-i18n="donut.duration_stats">耗时统计</span></div>
+                        <div class="donut-sub" id="output-speed-val">- tok/s</div>
                     </div>
                     <div class="donut-content">
                         <div class="donut-visual">
                             <svg id="donut-duration-svg" viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);"></svg>
                             <div class="donut-center-text">
                                 <div class="donut-center-val" id="donut-duration-center-val">-</div>
-                                <div class="donut-center-label">活跃时长</div>
+                                <div class="donut-center-label" data-i18n="donut.active_duration">活跃时长</div>
                             </div>
                         </div>
                         <div class="donut-legend-grid" id="duration-legend-grid"></div>
@@ -140,10 +141,10 @@
             <div class="model-usage-card">
                 <div class="model-usage-header">
                     <div class="donut-title">
-                        <span>🤖</span> 模型使用量统计
+                        <span>🤖</span> <span data-i18n="model.title">模型使用量统计</span>
                         <span class="donut-sub" id="model-usage-sub" style="font-weight: 400; margin-left: 4px;">-</span>
                     </div>
-                    <span class="donut-sub">点击表头排序 · 点击模型行筛选下方会话</span>
+                    <span class="donut-sub" data-i18n="model.hint">点击表头排序 · 点击模型行筛选下方会话</span>
                 </div>
                 <div class="model-usage-body">
                     <div class="model-donut-col">
@@ -152,14 +153,14 @@
                                 <svg id="donut-model-tokens-svg" viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);"></svg>
                                 <div class="donut-center-text">
                                     <div class="donut-center-val" id="donut-model-tokens-val" style="font-size: 13.5px;">-</div>
-                                    <div class="donut-center-label">Token 占比</div>
+                                    <div class="donut-center-label" data-i18n="model.donut_token">Token 占比</div>
                                 </div>
                             </div>
                             <div class="donut-visual" style="width: 112px; height: 112px;">
                                 <svg id="donut-model-calls-svg" viewBox="0 0 100 100" style="width: 100%; height: 100%; transform: rotate(-90deg);"></svg>
                                 <div class="donut-center-text">
                                     <div class="donut-center-val" id="donut-model-calls-val" style="font-size: 13.5px;">-</div>
-                                    <div class="donut-center-label">调用占比</div>
+                                    <div class="donut-center-label" data-i18n="model.donut_calls">调用占比</div>
                                 </div>
                             </div>
                         </div>
@@ -173,48 +174,48 @@
             <div class="bottom-section">
                 <div class="bottom-card">
                     <div class="bottom-header">
-                        <div class="bottom-title"><span>📅</span> 活跃度</div>
+                        <div class="bottom-title"><span>📅</span> <span data-i18n="heatmap.title">活跃度</span></div>
                         <div class="bottom-count" style="display: flex; gap: 4px;">
-                            <button type="button" class="chip" id="hm-mode-sessions" style="font-size: 10px; padding: 1px 6px;" onclick="setHeatmapMode('sessions')">会话活跃</button>
-                            <button type="button" class="chip active" id="hm-mode-tokens" style="font-size: 10px; padding: 1px 6px;" onclick="setHeatmapMode('tokens')">Token 消耗</button>
+                            <button type="button" class="chip" id="hm-mode-sessions" data-i18n="heatmap.mode_sessions" style="font-size: 10px; padding: 1px 6px;" onclick="setHeatmapMode('sessions')">会话活跃</button>
+                            <button type="button" class="chip active" id="hm-mode-tokens" data-i18n="heatmap.mode_tokens" style="font-size: 10px; padding: 1px 6px;" onclick="setHeatmapMode('tokens')">Token 消耗</button>
                         </div>
                     </div>
-                    <div id="heatmap-months-label" style="font-size: 11px; color: var(--muted); margin-bottom: 4px;">6月 · 7月 · 8月 · 9月 · 10月 · 11月</div>
+                    <div id="heatmap-months-label" style="font-size: 11px; color: var(--muted); margin-bottom: 4px;"></div>
                     <div class="heatmap-grid" id="heatmap-cells"></div>
                     <div class="heat-legend">
-                        <span title="旧版日志未记录 Token 字段，但有对话活跃" style="display:inline-flex;align-items:center;gap:3px;margin-right:auto;">
-                            <span class="heat-cell heat-unbilled" style="width:9px;height:9px;display:inline-block;"></span>无Token记录
+                        <span data-i18n-title="heatmap.unbilled_title" title="旧版日志未记录 Token 字段，但有对话活跃" style="display:inline-flex;align-items:center;gap:3px;margin-right:auto;">
+                            <span class="heat-cell heat-unbilled" style="width:9px;height:9px;display:inline-block;"></span><span data-i18n="heatmap.unbilled">无Token记录</span>
                         </span>
-                        <span>少</span>
+                        <span data-i18n="heatmap.low">少</span>
                         <div class="heat-cell heat-l0" style="width: 9px; height: 9px;"></div>
                         <div class="heat-cell heat-l1" style="width: 9px; height: 9px;"></div>
                         <div class="heat-cell heat-l2" style="width: 9px; height: 9px;"></div>
                         <div class="heat-cell heat-l3" style="width: 9px; height: 9px;"></div>
                         <div class="heat-cell heat-l4" style="width: 9px; height: 9px;"></div>
-                        <span>多</span>
+                        <span data-i18n="heatmap.high">多</span>
                     </div>
                 </div>
 
                 <div class="bottom-card">
                     <div class="bottom-header">
-                        <div class="bottom-title"><span>🧩</span> 技能加载</div>
-                        <div class="bottom-count" id="skills-header-count">加载汇总</div>
+                        <div class="bottom-title"><span>🧩</span> <span data-i18n="bottom.skills">技能加载</span></div>
+                        <div class="bottom-count" id="skills-header-count" data-i18n="bottom.skills_init">加载汇总</div>
                     </div>
                     <div class="rank-list" id="skills-list"></div>
                 </div>
 
                 <div class="bottom-card">
                     <div class="bottom-header">
-                        <div class="bottom-title"><span>🔧</span> 工具调用</div>
-                        <div class="bottom-count" id="tools-header-count">调用汇总</div>
+                        <div class="bottom-title"><span>🔧</span> <span data-i18n="bottom.tools">工具调用</span></div>
+                        <div class="bottom-count" id="tools-header-count" data-i18n="bottom.tools_init">调用汇总</div>
                     </div>
                     <div class="rank-list" id="tools-list"></div>
                 </div>
 
                 <div class="bottom-card">
                     <div class="bottom-header">
-                        <div class="bottom-title"><span>⌨️</span> 命令执行</div>
-                        <div class="bottom-count" id="commands-header-count">执行汇总</div>
+                        <div class="bottom-title"><span>⌨️</span> <span data-i18n="bottom.commands">命令执行</span></div>
+                        <div class="bottom-count" id="commands-header-count" data-i18n="bottom.commands_init">执行汇总</div>
                     </div>
                     <div class="rank-list" id="commands-list"></div>
                 </div>
@@ -225,24 +226,24 @@
                 <!-- Session Header Bar -->
                 <div class="lc-ov-sessions-head">
                     <div class="lc-ov-sessions-title-group">
-                        <span class="lc-ov-sessions-title">会话</span>
+                        <span class="lc-ov-sessions-title" data-i18n="sessions.title">会话</span>
                         <span class="lc-ov-sessions-count" id="sessions-total-count">0</span>
                     </div>
                     <div class="lc-ov-search-wrap">
-                        <input type="search" class="lc-ov-search" id="sessions-search-input" placeholder="搜索标题 / 目录 / 最后消息..." oninput="onSessionSearch(this.value)" />
+                        <input type="search" class="lc-ov-search" id="sessions-search-input" data-i18n-placeholder="sessions.search_placeholder" placeholder="搜索标题 / 目录 / 最后消息..." oninput="onSessionSearch(this.value)" />
                     </div>
                     <div class="lc-ov-controls">
                         <select class="lc-ov-dropdown" id="sessions-month-select" onchange="onSessionMonthSelect(this.value)">
-                            <option value="all">全部月份</option>
+                            <option value="all" data-i18n="sessions.month_all">全部月份</option>
                         </select>
                         <select class="lc-ov-dropdown" id="sessions-filter-select" onchange="onSessionArchiveSelect(this.value)">
-                            <option value="all">全部会话 (显示已归档)</option>
-                            <option value="active">仅活跃会话</option>
+                            <option value="all" data-i18n="sessions.scope_all">全部会话 (显示已归档)</option>
+                            <option value="active" data-i18n="sessions.scope_active">仅活跃会话</option>
                         </select>
                         <div class="lc-gran" role="group">
-                            <button type="button" class="lc-gran-btn active" id="sort-updated-btn" onclick="setSessionSort('updated')">最近更新</button>
-                            <button type="button" class="lc-gran-btn" id="sort-tokens-btn" onclick="setSessionSort('tokens')">Token 总用量</button>
-                            <button type="button" class="lc-gran-btn" id="sort-context-btn" onclick="setSessionSort('context')">当前上下文</button>
+                            <button type="button" class="lc-gran-btn active" id="sort-updated-btn" data-i18n="sessions.sort_updated" onclick="setSessionSort('updated')">最近更新</button>
+                            <button type="button" class="lc-gran-btn" id="sort-tokens-btn" data-i18n="sessions.sort_tokens" onclick="setSessionSort('tokens')">Token 总用量</button>
+                            <button type="button" class="lc-gran-btn" id="sort-context-btn" data-i18n="sessions.sort_context" onclick="setSessionSort('context')">当前上下文</button>
                         </div>
                     </div>
                 </div>
@@ -267,21 +268,21 @@
         <div id="task-view" style="display: none;">
             <div class="multi-task-subnav">
                 <div class="quick-chips">
-                    <div class="chip active" id="chip-all" onclick="setTaskFilter('all')">全部 (<span id="cnt-all">0</span>)</div>
-                    <div class="chip" id="chip-running" onclick="setTaskFilter('running')">🟢 正在运行 (<span id="cnt-running">0</span>)</div>
-                    <div class="chip" id="chip-waiting" onclick="setTaskFilter('waiting')">⏸️ 待交互 (<span id="cnt-waiting">0</span>)</div>
-                    <div class="chip" id="chip-idle" onclick="setTaskFilter('idle')">🏁 最近完成 (<span id="cnt-idle">0</span>)</div>
+                    <div class="chip active" id="chip-all" onclick="setTaskFilter('all')"><span data-i18n="task.chip_all">全部</span> (<span id="cnt-all">0</span>)</div>
+                    <div class="chip" id="chip-running" onclick="setTaskFilter('running')"><span data-i18n="task.chip_running">🟢 正在运行</span> (<span id="cnt-running">0</span>)</div>
+                    <div class="chip" id="chip-waiting" onclick="setTaskFilter('waiting')"><span data-i18n="task.chip_waiting">⏸️ 待交互</span> (<span id="cnt-waiting">0</span>)</div>
+                    <div class="chip" id="chip-idle" onclick="setTaskFilter('idle')"><span data-i18n="task.chip_idle">🏁 最近完成</span> (<span id="cnt-idle">0</span>)</div>
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                    <span id="task-range-badge" class="badge badge-info" style="font-size: 10.5px;">🕒 全部</span>
+                    <span id="task-range-badge" class="badge badge-info" style="font-size: 10.5px;">🕒 -</span>
                     <label style="font-size: 11.5px; color: var(--muted); cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                        <input type="checkbox" id="auto-follow-chk" checked onchange="onAutoFollowChange()" /> 自动跟随活跃任务
+                        <input type="checkbox" id="auto-follow-chk" checked onchange="onAutoFollowChange()" /> <span data-i18n="task.auto_follow">自动跟随活跃任务</span>
                     </label>
                     <div class="view-mode-selector">
-                        <button class="view-btn active" id="vbtn-focus" onclick="setViewMode('focus')">📌 聚焦追踪</button>
-                        <button class="view-btn" id="vbtn-grid" onclick="setViewMode('grid')">🔲 并发看板</button>
-                        <button class="view-btn" id="vbtn-matrix" onclick="setViewMode('matrix')">📋 对比矩阵</button>
+                        <button class="view-btn active" id="vbtn-focus" data-i18n="task.view_focus" onclick="setViewMode('focus')">📌 聚焦追踪</button>
+                        <button class="view-btn" id="vbtn-grid" data-i18n="task.view_grid" onclick="setViewMode('grid')">🔲 并发看板</button>
+                        <button class="view-btn" id="vbtn-matrix" data-i18n="task.view_matrix" onclick="setViewMode('matrix')">📋 对比矩阵</button>
                     </div>
                 </div>
             </div>
@@ -290,43 +291,43 @@
             <div id="view-focus" class="split-layout">
                 <div class="task-queue-panel" id="task-queue-panel">
                     <button type="button" class="queue-toggle-btn btn-icon" id="queue-toggle-btn" onclick="toggleNarrowQueue()">
-                        <span>📋 任务队列 (点击收起/展开)</span>
+                        <span data-i18n="task.queue_title">📋 任务队列 (点击收起/展开)</span>
                         <span id="queue-toggle-arrow">▾</span>
                     </button>
-                    <input type="text" id="task-search-input" class="search-box" style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--bg); color: var(--text); outline: none; margin-bottom: 2px;" placeholder="🔍 搜索任务标题或工作区..." oninput="onTaskSearchInput(this.value)" />
+                    <input type="text" id="task-search-input" class="search-box" style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--bg); color: var(--text); outline: none; margin-bottom: 2px;" data-i18n-placeholder="task.search_placeholder" placeholder="🔍 搜索任务标题或工作区..." oninput="onTaskSearchInput(this.value)" />
                     <div id="task-queue-items"></div>
                 </div>
 
                 <div class="inspector-panel" id="inspector-panel">
                     <div class="insp-hero">
                         <div>
-                            <div class="insp-title" id="insp-title">加载任务中...</div>
+                            <div class="insp-title" id="insp-title" data-i18n="task.loading">加载任务中...</div>
                             <div class="insp-subline" id="insp-subline">
-                                <span>📁 工作区: <b id="insp-ws">-</b></span>
+                                <span>📁 <span data-i18n="task.ws_label">工作区</span>: <b id="insp-ws">-</b></span>
                                 <span>ID: <code id="insp-cid">-</code></span>
-                                <button type="button" class="btn-icon" style="padding: 2px 8px; font-size: 11px; min-height: 24px; color: var(--primary);" onclick="if(selectedTaskId) openContextDrawer(selectedTaskId)" title="查看上下文膨胀演进与优化建议">📈 上下文透视</button>
+                                <button type="button" class="btn-icon" style="padding: 2px 8px; font-size: 11px; min-height: 24px; color: var(--primary);" onclick="if(selectedTaskId) openContextDrawer(selectedTaskId)" data-i18n-title="task.btn_context_title" data-i18n="task.btn_context_diag" title="查看上下文膨胀演进与优化建议">📈 上下文透视</button>
                             </div>
                         </div>
                         <div style="text-align: right;">
                             <span id="insp-health-badge" class="badge badge-info">IDLE</span>
-                            <div style="font-size: 11px; color: var(--muted); margin-top: 4px;" id="insp-heartbeat">心跳: -</div>
+                            <div style="font-size: 11px; color: var(--muted); margin-top: 4px;" id="insp-heartbeat" data-i18n="task.heartbeat_init">心跳: -</div>
                         </div>
                     </div>
 
                     <div id="insp-inflight-box" class="inflight-card">
                         <div class="inflight-title">
-                            <span class="pulse-dot"></span> <span id="insp-inflight-label">当前执行动作</span>
+                            <span class="pulse-dot"></span> <span id="insp-inflight-label" data-i18n="task.inflight_default">当前执行动作</span>
                         </div>
                         <div class="inflight-cmd" id="insp-inflight-cmd">-</div>
                     </div>
 
                     <div id="insp-thinking-box" class="thinking-card" style="display: none;">
-                        <strong>💭 Agent 正在思考：</strong><span id="insp-thinking-text"></span>
+                        <strong data-i18n="task.thinking_prefix">💭 Agent 正在思考：</strong><span id="insp-thinking-text"></span>
                     </div>
 
                     <div id="insp-swarm-board-box" class="swarm-board-card" style="display: none;">
                         <div style="font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                            <span id="insp-swarm-title">🐝 Swarm 协作消息板</span>
+                            <span id="insp-swarm-title" data-i18n="task.swarm_board_title">🐝 Swarm 协作消息板</span>
                             <span id="insp-swarm-summary" style="font-size: 11px; color: var(--muted); font-weight: 600;"></span>
                         </div>
                         <div id="insp-swarm-posts"></div>
@@ -334,25 +335,25 @@
 
                     <div style="margin-bottom: 16px;">
                         <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-                            <span>🌿 任务拆解与子代理层级 (Subagents)</span>
-                            <span id="insp-subagents-count" style="font-size: 11px; color: var(--muted);">0 个</span>
+                            <span data-i18n="task.subagent_section">🌿 任务拆解与子代理层级 (Subagents)</span>
+                            <span id="insp-subagents-count" style="font-size: 11px; color: var(--muted);">0</span>
                         </div>
                         <div id="insp-subagents-tree"></div>
                     </div>
 
                     <div>
                         <div style="font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-                            <span>⚡ 实时执行流水 (Live Steps Stream)</span>
-                            <span id="insp-steps-count" style="font-size: 11px; color: var(--muted);">0 步 · 点击任意行展开详情</span>
+                            <span data-i18n="task.steps_section">⚡ 实时执行流水 (Live Steps Stream)</span>
+                            <span id="insp-steps-count" style="font-size: 11px; color: var(--muted);">0</span>
                         </div>
                         <div id="insp-subagent-banner" style="display: none;"></div>
                         <table>
                             <thead>
                                 <tr>
-                                    <th style="width: 50px;">步数</th>
-                                    <th style="width: 75px;">时间</th>
-                                    <th style="width: 120px;">类型</th>
-                                    <th>工具调用 / 内容摘要</th>
+                                    <th style="width: 50px;" data-i18n="task.col_step">步数</th>
+                                    <th style="width: 75px;" data-i18n="task.col_time">时间</th>
+                                    <th style="width: 120px;" data-i18n="task.col_type">类型</th>
+                                    <th data-i18n="task.col_summary">工具调用 / 内容摘要</th>
                                 </tr>
                             </thead>
                             <tbody id="insp-steps-tbody"></tbody>
@@ -369,19 +370,19 @@
             <!-- View 3: Matrix -->
             <div id="view-matrix" class="card" style="display: none;">
                 <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                    <span class="pulse-dot"></span> 并发任务执行状态全景对比矩阵
+                    <span class="pulse-dot"></span> <span data-i18n="task.matrix_title">并发任务执行状态全景对比矩阵</span>
                 </div>
                 <table>
                     <thead>
                         <tr>
-                            <th>任务名称</th>
-                            <th>工作区</th>
-                            <th>状态</th>
-                            <th>总步数</th>
-                            <th>心跳</th>
-                            <th>当前执行动作 / 工具</th>
-                            <th>子代理</th>
-                            <th style="width: 80px;">操作</th>
+                            <th data-i18n="task.matrix_col_name">任务名称</th>
+                            <th data-i18n="task.matrix_col_ws">工作区</th>
+                            <th data-i18n="task.matrix_col_status">状态</th>
+                            <th data-i18n="task.matrix_col_steps">总步数</th>
+                            <th data-i18n="task.matrix_col_heartbeat">心跳</th>
+                            <th data-i18n="task.matrix_col_action">当前执行动作 / 工具</th>
+                            <th data-i18n="task.matrix_col_sub">子代理</th>
+                            <th style="width: 80px;" data-i18n="task.matrix_col_op">操作</th>
                         </tr>
                     </thead>
                     <tbody id="matrix-tbody"></tbody>
@@ -394,7 +395,7 @@
         <div id="context-drawer" class="context-drawer">
             <div class="drawer-header">
                 <div>
-                    <div class="drawer-title" id="drawer-title">📈 会话上下文演进与瘦身诊断</div>
+                    <div class="drawer-title" id="drawer-title" data-i18n="drawer.title_default">📈 会话上下文演进与瘦身诊断</div>
                     <div class="drawer-sub">
                         <span>📁 <b id="drawer-ws">-</b></span>
                         <span>ID: <code id="drawer-cid">-</code></span>
@@ -407,35 +408,35 @@
                 <!-- Hero Metrics -->
                 <div class="drawer-hero-grid">
                     <div class="drawer-hero-card">
-                        <div class="drawer-hero-label">当前上下文用量</div>
+                        <div class="drawer-hero-label" data-i18n="drawer.hero_ctx">当前上下文用量</div>
                         <div class="drawer-hero-val" id="d-ctx-val">-</div>
-                        <div class="drawer-hero-sub" id="d-ctx-sub">1M 窗口 -%</div>
+                        <div class="drawer-hero-sub" id="d-ctx-sub">-</div>
                     </div>
                     <div class="drawer-hero-card">
-                        <div class="drawer-hero-label">交互总轮次</div>
+                        <div class="drawer-hero-label" data-i18n="drawer.hero_turns">交互总轮次</div>
                         <div class="drawer-hero-val" id="d-turns-val">-</div>
-                        <div class="drawer-hero-sub">共 <span id="d-steps-val">-</span> 步</div>
+                        <div class="drawer-hero-sub"><span data-i18n="drawer.total_steps_prefix">共</span> <span id="d-steps-val">-</span> <span data-i18n="drawer.steps_unit">步</span></div>
                     </div>
                     <div class="drawer-hero-card">
-                        <div class="drawer-hero-label">压缩裁剪收益</div>
+                        <div class="drawer-hero-label" data-i18n="drawer.hero_saved">压缩裁剪收益</div>
                         <div class="drawer-hero-val" id="d-saved-val">-</div>
-                        <div class="drawer-hero-sub" id="d-saved-sub">未压缩</div>
+                        <div class="drawer-hero-sub" id="d-saved-sub" data-i18n="drawer.hero_saved_init">未压缩</div>
                     </div>
                     <div class="drawer-hero-card">
-                        <div class="drawer-hero-label">总预估费用</div>
+                        <div class="drawer-hero-label" data-i18n="drawer.hero_cost">总预估费用</div>
                         <div class="drawer-hero-val" id="d-cost-val">-</div>
-                        <div class="drawer-hero-sub">已计费映射</div>
+                        <div class="drawer-hero-sub" data-i18n="drawer.hero_cost_sub">已计费映射</div>
                     </div>
                 </div>
 
                 <!-- Evolution Curve -->
                 <div class="drawer-section-card">
                     <div class="drawer-sec-title">
-                        <span>📈 各轮次 Token 堆积演进走势 (Token Evolution)</span>
-                        <span style="font-size: 11px; color: var(--muted);" id="drawer-curve-note">共 0 轮交互</span>
+                        <span data-i18n="drawer.curve_title">📈 各轮次 Token 堆积演进走势 (Token Evolution)</span>
+                        <span style="font-size: 11px; color: var(--muted);" id="drawer-curve-note" data-i18n="drawer.curve_note_init">共 0 轮交互</span>
                     </div>
                     <div style="font-size: 11px; color: var(--muted); margin-bottom: 6px;">
-                        走势图呈现上下文膨胀曲线。标有 <span style="color: var(--success); font-weight:700;">✂️ 裁剪压缩</span> 与 <span style="color: var(--warning); font-weight:700;">⚠️ 大工具尖峰</span>，悬浮或点击可下钻。
+                        <span data-i18n="drawer.curve_hint_1">走势图呈现上下文膨胀曲线。标有 </span><span style="color: var(--success); font-weight:700;" data-i18n="drawer.curve_hint_cut">✂️ 裁剪压缩</span><span data-i18n="drawer.curve_hint_2"> 与 </span><span style="color: var(--warning); font-weight:700;" data-i18n="drawer.curve_hint_spike">⚠️ 大工具尖峰</span><span data-i18n="drawer.curve_hint_3">，悬浮或点击可下钻。</span>
                     </div>
                     <div class="curve-wrap" id="curve-wrap">
                         <div id="curve-svg-box" style="width: 100%; height: 100%;"></div>
@@ -446,8 +447,8 @@
                 <!-- Selected Turn Detail Card -->
                 <div class="drawer-section-card" id="turn-detail-section" style="display: none;">
                     <div class="drawer-sec-title">
-                        <span>🔍 选中轮次明细透视</span>
-                        <button class="btn-icon" style="padding: 2px 8px; font-size: 11px;" id="btn-jump-step" onclick="jumpToStepFromDrawer()">⚡ 直达该步流水 (Tab 2)</button>
+                        <span data-i18n="drawer.turn_detail_title">🔍 选中轮次明细透视</span>
+                        <button class="btn-icon" style="padding: 2px 8px; font-size: 11px;" id="btn-jump-step" data-i18n="drawer.jump_step" onclick="jumpToStepFromDrawer()">⚡ 直达该步流水 (Tab 2)</button>
                     </div>
                     <div id="turn-detail-content" class="turn-detail-card"></div>
                 </div>
@@ -455,8 +456,8 @@
                 <!-- Smart Recommendations & Compaction Insights -->
                 <div class="drawer-section-card">
                     <div class="drawer-sec-title">
-                        <span>💡 全维度智能瘦身诊断与优化建议</span>
-                        <span id="recom-count-badge" class="badge badge-info" style="font-size: 10px;">0 项诊断</span>
+                        <span data-i18n="drawer.recoms_title">💡 全维度智能瘦身诊断与优化建议</span>
+                        <span id="recom-count-badge" class="badge badge-info" style="font-size: 10px;" data-i18n="drawer.recoms_count_init">0 项诊断</span>
                     </div>
                     <div id="recoms-container" style="display: flex; flex-direction: column; gap: 8px;">
                         <!-- Dynamic Diagnostic Items -->
@@ -466,19 +467,20 @@
 
             <div class="drawer-footer">
                 <div style="display: flex; gap: 8px;">
-                    <button class="btn-icon" onclick="copyCompactCmd()">📋 复制 /compact 建议指令</button>
-                    <button class="btn-icon" onclick="copyDiagnosisReport()">📄 复制诊断简报 (Markdown)</button>
+                    <button class="btn-icon" data-i18n="drawer.copy_compact" onclick="copyCompactCmd()">📋 复制 /compact 建议指令</button>
+                    <button class="btn-icon" data-i18n="drawer.copy_report" onclick="copyDiagnosisReport()">📄 复制诊断简报 (Markdown)</button>
                 </div>
-                <button class="btn-icon" onclick="closeContextDrawer()">关闭</button>
+                <button class="btn-icon" data-i18n="drawer.close" onclick="closeContextDrawer()">关闭</button>
             </div>
         </div>
 
-        <div id="toast-notify" class="toast-notify">已复制到剪贴板</div>
+        <div id="toast-notify" class="toast-notify" data-i18n="toast.copied">已复制到剪贴板</div>
 
     </div>
 
     <!-- CLIENT SCRIPTS -->
     <script>const INITIAL_PAYLOAD = __INITIAL_DATA_PLACEHOLDER__;</script>
+    <script src="/static/js/i18n.js?v=__UI_VERSION__"></script>
     <script src="/static/js/state.js?v=__UI_VERSION__"></script>
     <script src="/static/js/sessions.js?v=__UI_VERSION__"></script>
     <script src="/static/js/analytics.js?v=__UI_VERSION__"></script>

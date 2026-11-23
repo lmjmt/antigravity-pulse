@@ -25,12 +25,18 @@ from core.formatting import (
     format_tokens,
     parse_iso,
 )
+from core.i18n import (
+    format_month_label,
+    format_relative_time,
+    normalize_lang,
+    tr,
+)
 from core.models import (
     FAMILY_COLORS,
     MODEL_PALETTE,
     MODEL_SEL_RE,
-    UNKNOWN_MODEL_LABEL,
     get_model_family,
+    get_unknown_model_label,
     normalize_model_name,
 )
 from core.storage import fetch_merged_conversations, find_transcript_path, resolve_conversation_dt
@@ -285,6 +291,7 @@ class AntigravityAnalytics:
         hourly_costs,
         hourly_steps,
         hourly_sessions,
+        lang="zh",
     ):
         """Build time-series chart bars suited to today (24h), 7d, 30d, or all (weekly)."""
         if range_key == "today":
@@ -306,11 +313,15 @@ class AntigravityAnalytics:
                     "sessions": sess_cnt,
                     "has_tokens": tok > 0,
                 })
-            return {"title": "今日各小时用量", "mode": "hourly", "points": points}
+            return {"title": tr(lang, "今日各小时用量", "Today Hourly Usage"), "mode": "hourly", "points": points}
 
         if range_key in ("7d", "30d"):
             num_days = 7 if range_key == "7d" else 30
-            title = "近 7 天用量" if range_key == "7d" else "近 30 天用量"
+            title = (
+                tr(lang, "近 7 天用量", "Last 7 Days Usage")
+                if range_key == "7d"
+                else tr(lang, "近 30 天用量", "Last 30 Days Usage")
+            )
             points = []
             for i in range(num_days - 1, -1, -1):
                 day_dt = now_local - timedelta(days=i)
@@ -335,7 +346,7 @@ class AntigravityAnalytics:
 
         all_days = sorted([d for d in daily_steps.keys() if d and len(d) == 10])
         if not all_days:
-            return {"title": "全部历史用量趋势", "mode": "weekly", "points": []}
+            return {"title": tr(lang, "全部历史用量趋势", "All-Time Usage Trend"), "mode": "weekly", "points": []}
         first_d = datetime.strptime(all_days[0], "%Y-%m-%d").date()
         last_d = max(datetime.strptime(all_days[-1], "%Y-%m-%d").date(), now_local.date())
         wk_start = first_d - timedelta(days=first_d.weekday())
@@ -372,13 +383,15 @@ class AntigravityAnalytics:
                 "sessions": sess_cnt,
                 "has_tokens": tok > 0,
             })
-        return {"title": "全部历史用量趋势 (按周)", "mode": "weekly", "points": points}
+        return {"title": tr(lang, "全部历史用量趋势 (按周)", "All-Time Usage (Weekly)"), "mode": "weekly", "points": points}
 
-    def collect_analytics(self, target_conv_id=None, time_range="all"):
-        range_key, start_local, now_local, start_utc, range_label, session_kpi_label = get_time_range_bounds(time_range)
+    def collect_analytics(self, target_conv_id=None, time_range="all", lang="zh"):
+        lang = normalize_lang(lang)
+        range_key, start_local, now_local, start_utc, range_label, session_kpi_label = get_time_range_bounds(time_range, lang=lang)
         now_ts = time.time()
+        cache_key = (range_key, lang)
         with self._lock:
-            cached_entry = self._range_caches.get(range_key)
+            cached_entry = self._range_caches.get(cache_key)
             if cached_entry and (now_ts - cached_entry[0] < self.cache_ttl):
                 return cached_entry[1]
 
@@ -472,6 +485,7 @@ class AntigravityAnalytics:
                 conv_primary_model[cid_p] = p_mod
 
         model_stats = {}
+        unknown_mod_lbl = get_unknown_model_label(lang)
 
         for steps in parsed_files:
             for st in steps:
@@ -533,7 +547,7 @@ class AntigravityAnalytics:
                     if not eff_model and conv_id in child_to_root:
                         eff_model = conv_primary_model.get(child_to_root[conv_id]) or conv_primary_model.get(root_cid) or ""
                     if not eff_model:
-                        eff_model = UNKNOWN_MODEL_LABEL
+                        eff_model = unknown_mod_lbl
                     mst = model_stats.get(eff_model)
                     if mst is None:
                         mst = {
@@ -594,7 +608,7 @@ class AntigravityAnalytics:
 
         usage_chart = self._build_usage_series(
             range_key, start_local, now_local, daily_tokens, daily_costs, daily_steps, daily_sessions,
-            hourly_tokens, hourly_costs, hourly_steps, hourly_sessions,
+            hourly_tokens, hourly_costs, hourly_steps, hourly_sessions, lang=lang,
         )
 
         token_breakdown = []
@@ -608,11 +622,11 @@ class AntigravityAnalytics:
             out_rep_share = 1.0 - out_th_share
 
             raw_slices = [
-                ("缓存复用读取", float(total_cache_read_tokens), "#10b981", ""),
-                ("新增输入与工具上下文", total_input_tokens * in_tool_share, "#3b82f6", "≈"),
-                ("用户指令输入", total_input_tokens * in_user_share, "#f59e0b", "≈"),
-                ("模型思考产出", total_output_tokens * out_th_share, "#8b5cf6", "≈"),
-                ("模型回复与调用", total_output_tokens * out_rep_share, "#06b6d4", "≈"),
+                (tr(lang, "缓存复用读取", "Cache Read"), float(total_cache_read_tokens), "#10b981", ""),
+                (tr(lang, "新增输入与工具上下文", "New Input & Context"), total_input_tokens * in_tool_share, "#3b82f6", "≈"),
+                (tr(lang, "用户指令输入", "User Prompts"), total_input_tokens * in_user_share, "#f59e0b", "≈"),
+                (tr(lang, "模型思考产出", "Model Thinking"), total_output_tokens * out_th_share, "#8b5cf6", "≈"),
+                (tr(lang, "模型回复与调用", "Replies & Calls"), total_output_tokens * out_rep_share, "#06b6d4", "≈"),
             ]
             for label, tok_val, color, prefix in raw_slices:
                 pct = round((tok_val / total_tokens) * 100.0, 2) if total_tokens > 0 else 0.0
@@ -626,10 +640,10 @@ class AntigravityAnalytics:
         else:
             est_sum = tool_out_tok_sum + th_tok_sum + rep_tok_sum + user_tok_sum
             raw_slices = [
-                ("工具输出估算", float(tool_out_tok_sum), "#3b82f6", "≈"),
-                ("模型思考估算", float(th_tok_sum), "#8b5cf6", "≈"),
-                ("模型回复估算", float(rep_tok_sum), "#06b6d4", "≈"),
-                ("用户指令估算", float(user_tok_sum), "#f59e0b", "≈"),
+                (tr(lang, "工具输出估算", "Est. Tool Output"), float(tool_out_tok_sum), "#3b82f6", "≈"),
+                (tr(lang, "模型思考估算", "Est. Thinking"), float(th_tok_sum), "#8b5cf6", "≈"),
+                (tr(lang, "模型回复估算", "Est. Replies"), float(rep_tok_sum), "#06b6d4", "≈"),
+                (tr(lang, "用户指令估算", "Est. Prompts"), float(user_tok_sum), "#f59e0b", "≈"),
             ]
             for label, tok_val, color, prefix in raw_slices:
                 pct = round((tok_val / est_sum) * 100.0, 2) if est_sum > 0 else 0.0
@@ -642,11 +656,11 @@ class AntigravityAnalytics:
                 })
 
         duration_breakdown = [
-            {"label": "模型等待", "pct": dur_pct(model_wait_sec), "duration": model_wait_sec, "desc": f"{format_duration(model_wait_sec)} · {format_tokens(model_calls_count)} 次请求", "color": "#3b82f6"},
-            {"label": "模型思考", "pct": dur_pct(model_thinking_sec), "duration": model_thinking_sec, "desc": f"{format_duration(model_thinking_sec)} · {format_tokens(thinking_steps_count)} 步思考", "color": "#8b5cf6"},
-            {"label": "模型回复", "pct": dur_pct(model_reply_sec), "duration": model_reply_sec, "desc": f"{format_duration(model_reply_sec)} · {format_tokens(reply_steps_count)} 步回复", "color": "#ec4899"},
-            {"label": "工具参数", "pct": dur_pct(tool_param_sec), "duration": tool_param_sec, "desc": f"{format_duration(tool_param_sec)} · {format_tokens(tool_steps_count)} 步调用", "color": "#f59e0b"},
-            {"label": "工具执行", "pct": dur_pct(tool_exec_sec), "duration": tool_exec_sec, "desc": f"{format_duration(tool_exec_sec)} · {format_tokens(total_tool_calls)} 次执行", "color": "#10b981"},
+            {"label": tr(lang, "模型等待", "Model Wait"), "pct": dur_pct(model_wait_sec), "duration": model_wait_sec, "desc": f"{format_duration(model_wait_sec)} · {format_tokens(model_calls_count)} " + tr(lang, "次请求", "reqs"), "color": "#3b82f6"},
+            {"label": tr(lang, "模型思考", "Model Thinking"), "pct": dur_pct(model_thinking_sec), "duration": model_thinking_sec, "desc": f"{format_duration(model_thinking_sec)} · {format_tokens(thinking_steps_count)} " + tr(lang, "步思考", "steps"), "color": "#8b5cf6"},
+            {"label": tr(lang, "模型回复", "Model Reply"), "pct": dur_pct(model_reply_sec), "duration": model_reply_sec, "desc": f"{format_duration(model_reply_sec)} · {format_tokens(reply_steps_count)} " + tr(lang, "步回复", "steps"), "color": "#ec4899"},
+            {"label": tr(lang, "工具参数", "Tool Args"), "pct": dur_pct(tool_param_sec), "duration": tool_param_sec, "desc": f"{format_duration(tool_param_sec)} · {format_tokens(tool_steps_count)} " + tr(lang, "步调用", "calls"), "color": "#f59e0b"},
+            {"label": tr(lang, "工具执行", "Tool Exec"), "pct": dur_pct(tool_exec_sec), "duration": tool_exec_sec, "desc": f"{format_duration(tool_exec_sec)} · {format_tokens(total_tool_calls)} " + tr(lang, "次执行", "runs"), "color": "#10b981"},
         ]
 
         heatmap_days = []
@@ -659,7 +673,7 @@ class AntigravityAnalytics:
         for i in range(168):
             cur = start_day + timedelta(days=i)
             cur_str = cur.strftime("%Y-%m-%d")
-            m_lbl = f"{cur.month}月"
+            m_lbl = format_month_label(cur.month, lang)
             if m_lbl not in month_names:
                 month_names.append(m_lbl)
             d_tok = daily_tokens.get(cur_str, 0)
@@ -691,13 +705,13 @@ class AntigravityAnalytics:
         family_agg = {}
         palette_idx = 0
         for mname, st in sorted_model_stats:
-            is_unk = (mname == UNKNOWN_MODEL_LABEL)
+            is_unk = (mname == unknown_mod_lbl)
             if is_unk:
-                color = FAMILY_COLORS["未记录"]
+                color = FAMILY_COLORS["Unrecorded" if lang == "en" else "未记录"]
             else:
                 color = MODEL_PALETTE[palette_idx % len(MODEL_PALETTE)]
                 palette_idx += 1
-            fam = get_model_family(mname)
+            fam = get_model_family(mname, lang=lang)
             m_toks = st["tokens"]
             m_calls = st["calls"]
             m_in = st["input_tokens"]
@@ -760,8 +774,9 @@ class AntigravityAnalytics:
         }
 
         top_mod_sig = f"{model_items[0]['name']}:{model_items[0]['calls']}" if model_items else "none"
-        ana_sig = f"{range_key}:{total_sessions}:{archived_sessions}:{total_tokens}:{total_turns}:{total_tool_calls}:{int(total_active_sec)}:{len(model_items)}:{top_mod_sig}"
+        ana_sig = f"{lang}:{range_key}:{total_sessions}:{archived_sessions}:{total_tokens}:{total_turns}:{total_tool_calls}:{int(total_active_sec)}:{len(model_items)}:{top_mod_sig}"
         result = {
+            "lang": lang,
             "sig": ana_sig,
             "time_range": range_key,
             "range_label": range_label,
@@ -796,13 +811,14 @@ class AntigravityAnalytics:
         }
 
         with self._lock:
-            self._range_caches[range_key] = (now_ts, result)
+            self._range_caches[cache_key] = (now_ts, result)
         return result
 
-    def collect_sessions_overview(self, current_cid=None, limit=None, time_range="all"):
-        range_key, _, now_local, start_utc, range_label, _ = get_time_range_bounds(time_range)
+    def collect_sessions_overview(self, current_cid=None, limit=None, time_range="all", lang="zh"):
+        lang = normalize_lang(lang)
+        range_key, _, now_local, start_utc, range_label, _ = get_time_range_bounds(time_range, lang=lang)
         now_ts = time.time()
-        cache_key = (range_key, current_cid, limit)
+        cache_key = (range_key, current_cid, limit, lang)
         with self._lock:
             cached_sess = self._sessions_caches.get(cache_key)
             if cached_sess and (now_ts - cached_sess[0] < self.cache_ttl):
@@ -831,29 +847,23 @@ class AntigravityAnalytics:
 
         if not root_rows:
             return {
+                "lang": lang,
                 "time_range": range_key,
                 "range_label": range_label,
                 "sessions": [],
-                "workspaces": [{"name": "全部", "key": "all", "count": 0}],
-                "months": [{"key": "all", "label": "全部月份", "count": 0}],
+                "workspaces": [{"name": tr(lang, "全部", "All"), "key": "all", "count": 0}],
+                "months": [{"key": "all", "label": tr(lang, "全部月份", "All Months"), "count": 0}],
                 "total_count": 0,
             }
 
         def get_rel_time(dt):
             if not dt or dt.year < 2000:
-                return "未知"
+                return format_relative_time(None, lang)
             now = datetime.now(timezone.utc)
-            diff = max(0.0, (now - dt).total_seconds())
-            if diff < 60:
-                return "刚刚"
-            if diff < 3600:
-                return f"{int(diff // 60)} 分钟前"
-            if diff < 86400:
-                return f"{int(diff // 3600)} 小时前"
-            days = int(diff // 86400)
-            return f"{days} 天前"
+            return format_relative_time((now - dt).total_seconds(), lang)
 
         swarm_model_map = get_swarm_model_map()
+        unknown_mod_lbl = get_unknown_model_label(lang)
         local_tz = now_local.tzinfo
         sessions = []
         ws_counts = {}
@@ -875,7 +885,7 @@ class AntigravityAnalytics:
 
             db_title = (r.get("title") or "").strip()
             meta_title = (meta.get("first_user_title") or "").strip() if meta else ""
-            title = db_title or meta_title or f"未命名任务 ({cid[:8]})"
+            title = db_title or meta_title or tr(lang, f"未命名任务 ({cid[:8]})", f"Untitled Task ({cid[:8]})")
 
             steps = max(r.get("step_count") or 0, meta.get("steps_count", 0) if meta else 0)
             turns = meta.get("turns", 1) if (meta and meta.get("turns", 0) > 0) else max(1, steps and 1)
@@ -891,7 +901,7 @@ class AntigravityAnalytics:
                 sort_ts = dt.timestamp()
             else:
                 created_day = "-"
-                created_month = "未知"
+                created_month = "unknown"
                 sort_ts = 0.0
             month_counts[created_month] = month_counts.get(created_month, 0) + 1
 
@@ -918,7 +928,7 @@ class AntigravityAnalytics:
                 s_models.append(sw_mod)
             primary_model = s_models[0] if s_models else ""
             if not s_models and steps > 0:
-                s_models = [UNKNOWN_MODEL_LABEL]
+                s_models = [unknown_mod_lbl]
 
             item = {
                 "id": cid,
@@ -936,7 +946,7 @@ class AntigravityAnalytics:
                 "occupancy_pct": occupancy_pct,
                 "total_tokens": total_tokens,
                 "cost_cny": cost_cny,
-                "last_msg": last_msg or "会话执行完成",
+                "last_msg": last_msg or tr(lang, "会话执行完成", "Session completed"),
                 "relative_time": rel_time,
                 "created_day": created_day,
                 "_sort_ts": sort_ts,
@@ -951,21 +961,26 @@ class AntigravityAnalytics:
         for s in sessions:
             s.pop("_sort_ts", None)
 
-        chips = [{"name": "全部", "key": "all", "count": len(sessions)}]
+        chips = [{"name": tr(lang, "全部", "All"), "key": "all", "count": len(sessions)}]
         for k, v in sorted(ws_counts.items(), key=lambda x: x[1], reverse=True):
             chips.append({"name": k, "key": k, "count": v})
 
-        month_opts = [{"key": "all", "label": f"全部月份 ({len(sessions)})", "count": len(sessions)}]
-        for mk in sorted([k for k in month_counts.keys() if k != "未知"], reverse=True):
+        month_opts = [{"key": "all", "label": tr(lang, f"全部月份 ({len(sessions)})", f"All Months ({len(sessions)})"), "count": len(sessions)}]
+        for mk in sorted([k for k in month_counts.keys() if k != "unknown"], reverse=True):
             month_opts.append({"key": mk, "label": f"{mk} ({month_counts[mk]})", "count": month_counts[mk]})
-        if "未知" in month_counts:
-            month_opts.append({"key": "未知", "label": f"日期未知 ({month_counts['未知']})", "count": month_counts["未知"]})
+        if "unknown" in month_counts:
+            month_opts.append({
+                "key": "unknown",
+                "label": tr(lang, f"日期未知 ({month_counts['unknown']})", f"Unknown Date ({month_counts['unknown']})"),
+                "count": month_counts["unknown"],
+            })
 
         top_sig = f"{sessions[0]['id']}:{sessions[0]['steps']}:{sessions[0]['running']}" if sessions else "empty"
         sum_steps = sum(s.get("steps", 0) for s in sessions)
         sum_toks = sum(s.get("total_tokens", 0) for s in sessions)
-        sess_sig = f"{range_key}:{len(sessions)}:{sum_steps}:{sum_toks}:{top_sig}"
+        sess_sig = f"{lang}:{range_key}:{len(sessions)}:{sum_steps}:{sum_toks}:{top_sig}"
         out = {
+            "lang": lang,
             "sig": sess_sig,
             "time_range": range_key,
             "range_label": range_label,
@@ -978,5 +993,5 @@ class AntigravityAnalytics:
             self._sessions_caches[cache_key] = (now_ts, out)
         return out
 
-    def analyze_context_timeline(self, cid):
-        return _analyze_timeline(cid, self._timeline_cache, self._lock)
+    def analyze_context_timeline(self, cid, lang="zh"):
+        return _analyze_timeline(cid, self._timeline_cache, self._lock, lang=lang)

@@ -126,8 +126,9 @@ class SidecarHandler(BaseHTTPRequestHandler):
             return
 
         try:
+            accept_lang = self.headers.get("Accept-Language", "") if hasattr(self, "headers") else ""
             status, content_type, body = core.dispatch_get(
-                parsed.path, qs, code_version=code_ver, reload_error=reload_err
+                parsed.path, qs, code_version=code_ver, reload_error=reload_err, accept_language=accept_lang
             )
             self._write_response(status, content_type, body)
         except Exception as e:

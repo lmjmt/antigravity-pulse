@@ -6,23 +6,23 @@ function renderAnalytics(data) {
     const sessLabelEl = document.getElementById('kpi-sessions-label');
     if (sessLabelEl && kpi.session_label) sessLabelEl.innerText = kpi.session_label;
     document.getElementById('kpi-sessions').innerText = kpi.total_sessions;
-    document.getElementById('kpi-sessions-sub').innerText = `其中已归档 ${kpi.archived_sessions} 个`;
+    document.getElementById('kpi-sessions-sub').innerText = t('kpi.sessions_archived_sub', { count: kpi.archived_sessions });
     document.getElementById('kpi-tokens').innerText = kpi.total_tokens_formatted;
-    document.getElementById('kpi-turns-sub').innerText = `轮次 ${kpi.total_turns}`;
+    document.getElementById('kpi-turns-sub').innerText = t('kpi.turns_sub', { val: kpi.total_turns });
     document.getElementById('kpi-cost').innerText = `¥${kpi.estimated_cost}`;
-    document.getElementById('kpi-cost-sub').innerText = `已计价 ${kpi.priced_sessions} 个会话`;
+    document.getElementById('kpi-cost-sub').innerText = t('kpi.cost_sub', { count: kpi.priced_sessions });
     document.getElementById('kpi-cache').innerText = `${kpi.cache_hit_rate}%`;
-    document.getElementById('kpi-cache-sub').innerText = `含 ${kpi.cache_sessions} 个会话`;
+    document.getElementById('kpi-cache-sub').innerText = t('kpi.cache_sub', { count: kpi.cache_sessions });
     document.getElementById('kpi-tools').innerText = kpi.tool_calls_formatted;
-    document.getElementById('kpi-tools-sub').innerText = `工具执行 ${kpi.tool_exec_duration}`;
+    document.getElementById('kpi-tools-sub').innerText = t('kpi.tools_sub', { val: kpi.tool_exec_duration });
     document.getElementById('kpi-duration').innerText = kpi.active_duration;
-    document.getElementById('kpi-duration-sub').innerText = `模型调用 ${kpi.model_calls}`;
+    document.getElementById('kpi-duration-sub').innerText = t('kpi.duration_sub', { val: kpi.model_calls });
 
-    document.getElementById('output-speed-val').innerText = `输出速度 ${kpi.output_speed} tok/s`;
+    document.getElementById('output-speed-val').innerText = t('donut.output_speed', { val: kpi.output_speed });
     document.getElementById('donut-token-center-val').innerText = kpi.total_tokens_formatted;
     document.getElementById('donut-duration-center-val').innerText = kpi.active_duration;
 
-    renderUsageChart(data.usage_chart || { title: '近 7 天用量', points: data.last_7_days || [] });
+    renderUsageChart(data.usage_chart || { title: t('chart.default_title'), points: data.last_7_days || [] });
     renderDonutSvg('donut-token-svg', data.token_breakdown);
     renderLegendGrid('token-legend-grid', data.token_breakdown, 'token');
 
@@ -34,9 +34,9 @@ function renderAnalytics(data) {
     const hmLbl = document.getElementById('heatmap-months-label');
     if (hmLbl && data.heatmap_months_label) hmLbl.innerText = data.heatmap_months_label;
     renderHeatmap(data.heatmap);
-    renderRankings('skills-list', data.top_skills, 'skills-header-count', `${data.top_skills.length} 个技能 · 加载汇总`);
-    renderRankings('tools-list', data.top_tools, 'tools-header-count', `${data.top_tools.length} 个工具 · ${kpi.tool_calls_formatted} 次调用`);
-    renderRankings('commands-list', data.top_commands, 'commands-header-count', `${data.top_commands.length} 个程序 · 执行汇总`);
+    renderRankings('skills-list', data.top_skills, 'skills-header-count', t('bottom.skills_sub', { count: data.top_skills.length }));
+    renderRankings('tools-list', data.top_tools, 'tools-header-count', t('bottom.tools_sub', { count: data.top_tools.length, calls: kpi.tool_calls_formatted }));
+    renderRankings('commands-list', data.top_commands, 'commands-header-count', t('bottom.commands_sub', { count: data.top_commands.length }));
 }
 
 function setUsageChartMode(mode) {
@@ -46,7 +46,7 @@ function setUsageChartMode(mode) {
     if (btnTok) btnTok.classList.toggle('active', usageChartMode === 'tokens');
     if (btnAct) btnAct.classList.toggle('active', usageChartMode === 'activity');
     if (cachedAnalytics) {
-        renderUsageChart(cachedAnalytics.usage_chart || { title: '近 7 天用量', points: cachedAnalytics.last_7_days || [] });
+        renderUsageChart(cachedAnalytics.usage_chart || { title: t('chart.default_title'), points: cachedAnalytics.last_7_days || [] });
     }
 }
 
@@ -65,12 +65,12 @@ function renderUsageChart(chartObj) {
     const container = document.getElementById('chart-7days-container');
     const titleEl = document.getElementById('usage-chart-title');
     if (titleEl && chartObj && chartObj.title) {
-        const suffix = (usageChartMode === 'activity') ? ' · 会话/步数' : '';
+        const suffix = (usageChartMode === 'activity') ? t('chart.activity_suffix') : '';
         titleEl.innerHTML = `<span>📊</span> ${escHtml(chartObj.title + suffix)}`;
     }
     const days = (chartObj && chartObj.points) ? chartObj.points : [];
     if (!days || days.length === 0) {
-        container.innerHTML = `<div style="text-align:center;color:var(--muted);padding:36px;">暂无用量记录</div>`;
+        container.innerHTML = `<div style="text-align:center;color:var(--muted);padding:36px;">${escHtml(t('chart.empty'))}</div>`;
         return;
     }
 
@@ -105,7 +105,7 @@ function renderUsageChart(chartObj) {
 
         barsHtml += `<g>`;
         if (isAct) {
-            barsHtml += `<title>${escHtml(d.full_date || d.date)}&#10;活跃会话: ${d.sessions || 0} 个&#10;交互步数: ${d.steps || 0} 步</title>`;
+            barsHtml += `<title>${escHtml(t('chart.tip_activity', { date: d.full_date || d.date, sessions: d.sessions || 0, steps: d.steps || 0 }))}</title>`;
             if (showVal) {
                 barsHtml += `<text x="${cx}" y="${yLeft - 3}" font-size="8.5" fill="var(--muted)" text-anchor="middle">${d.sessions || 0}</text>`;
             }
@@ -117,8 +117,8 @@ function renderUsageChart(chartObj) {
             }
         } else {
             const unbilledHint = (vLeft === 0 && (d.steps || 0) > 0)
-                ? `Token: 未记录(旧版日志)&#10;活跃: ${d.sessions || 0} 会话 / ${escHtml(d.steps_formatted || d.steps || 0)} 步`
-                : `Token: ${escHtml(d.tokens_formatted)}&#10;费用: ${escHtml(d.cost_formatted)}&#10;活跃: ${d.sessions || 0} 会话 / ${escHtml(d.steps_formatted || d.steps || 0)} 步`;
+                ? escHtml(t('chart.tip_unbilled', { sessions: d.sessions || 0, steps: d.steps_formatted || d.steps || 0 }))
+                : escHtml(t('chart.tip_billed', { tokens: d.tokens_formatted, cost: d.cost_formatted, sessions: d.sessions || 0, steps: d.steps_formatted || d.steps || 0 }));
             barsHtml += `<title>${escHtml(d.full_date || d.date)}&#10;${unbilledHint}</title>`;
             if (showVal) {
                 barsHtml += `<text x="${cx}" y="${yLeft - 3}" font-size="8.5" fill="var(--muted)" text-anchor="middle">${escHtml(d.tokens_formatted)}</text>`;
@@ -140,9 +140,9 @@ function renderUsageChart(chartObj) {
         barsHtml += `</g>`;
     });
 
-    const leftTop = isAct ? `${maxLeft}会` : formatTokens(maxLeft);
+    const leftTop = isAct ? t('chart.axis_sessions_unit', { val: maxLeft }) : formatTokens(maxLeft);
     const leftMid = isAct ? `${Math.round(maxLeft / 2)}` : formatTokens(Math.round(maxLeft / 2));
-    const rightTop = isAct ? `${formatTokens(maxRight)}步` : `¥${maxRight.toFixed(1)}`;
+    const rightTop = isAct ? t('chart.axis_steps_unit', { val: formatTokens(maxRight) }) : `¥${maxRight.toFixed(1)}`;
     const rightMid = isAct ? `${formatTokens(Math.round(maxRight / 2))}` : `¥${(maxRight / 2).toFixed(1)}`;
 
     container.innerHTML = `
@@ -211,20 +211,20 @@ function renderModelUsage(mu) {
     }
 
     if (!mu || !Array.isArray(mu.items) || mu.items.length === 0) {
-        if (subEl) subEl.innerText = '当前时间范围内暂无模型调用';
+        if (subEl) subEl.innerText = t('model.empty_sub');
         if (tokValEl) tokValEl.innerText = '0';
         if (callsValEl) callsValEl.innerText = '0';
         tokSvgEl.innerHTML = '';
         callsSvgEl.innerHTML = '';
         if (pillsEl) pillsEl.innerHTML = '';
-        listEl.innerHTML = `<div style="color: var(--muted); font-size: 11.5px; padding: 24px 0; text-align: center;">暂无模型调用记录</div>`;
+        listEl.innerHTML = `<div style="color: var(--muted); font-size: 11.5px; padding: 24px 0; text-align: center;">${escHtml(t('model.empty_list'))}</div>`;
         return;
     }
 
     const totTokens = mu.total_tokens || 0;
     const totCalls = mu.total_calls || 0;
     if (subEl) {
-        subEl.innerText = `${mu.range_label || ''} · ${mu.total_models} 类模型 · ${formatTokens(totTokens)} Tokens / ${formatTokens(totCalls)} 次调用`;
+        subEl.innerText = t('model.subtitle', { range: mu.range_label || '', models: mu.total_models, tokens: formatTokens(totTokens), calls: formatTokens(totCalls) });
     }
     if (tokValEl) tokValEl.innerText = formatTokens(totTokens);
     if (callsValEl) callsValEl.innerText = formatTokens(totCalls);
@@ -238,7 +238,7 @@ function renderModelUsage(mu) {
             const head = candidates.slice(0, 7);
             const tailPct = Math.max(0, 100 - head.reduce((acc, x) => acc + x.pct, 0));
             if (tailPct > 0.05) {
-                head.push({ color: '#94a3b8', pct: tailPct, title: `其余模型合计: ${tailPct.toFixed(1)}%` });
+                head.push({ color: '#94a3b8', pct: tailPct, title: t('model.other_tail', { pct: tailPct.toFixed(1) }) });
             }
             return head;
         }
@@ -253,13 +253,13 @@ function renderModelUsage(mu) {
     if (tokSlices.length > 0) {
         renderDonutSvg('donut-model-tokens-svg', tokSlices);
     } else {
-        tokSvgEl.innerHTML = `<circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="12"><title>当前时间范围无 Token 计费记录</title></circle>`;
+        tokSvgEl.innerHTML = `<circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="12"><title>${escHtml(t('model.no_billing_circle'))}</title></circle>`;
     }
 
     const callSlices = buildDonutSlices(
         mu.items,
         'calls_pct',
-        it => `${it.name}: ${it.calls_formatted} 次 (${fmtModelPct(it.calls_pct, it.calls)})`
+        it => t('model.call_tooltip', { name: it.name, calls: it.calls_formatted, pct: fmtModelPct(it.calls_pct, it.calls) })
     );
     if (callSlices.length > 0) {
         renderDonutSvg('donut-model-calls-svg', callSlices);
@@ -272,16 +272,16 @@ function renderModelUsage(mu) {
         const fams = [...(mu.families || [])].sort((a, b) => (b.tokens - a.tokens) || (b.calls - a.calls));
         let famHtml = `
             <div class="model-family-head">
-                <span>系列</span>
+                <span>${escHtml(t('model.col_family_mini'))}</span>
                 <span>Token</span>
-                <span>调用</span>
+                <span>${escHtml(t('model.col_calls_mini'))}</span>
             </div>
         `;
         fams.forEach(f => {
             const tokShare = fmtModelPct(f.tokens_pct, f.tokens);
             const callShare = fmtModelPct(f.calls_pct, f.calls);
             famHtml += `
-                <div class="model-family-row" title="${escHtml(f.family)}: ${escHtml(f.tokens_formatted)} Tokens (${escHtml(tokShare)}) · ${escHtml(f.calls)} 次调用 (${escHtml(callShare)})">
+                <div class="model-family-row" title="${escHtml(t('model.family_tooltip', { family: f.family, tokens: f.tokens_formatted, tokPct: tokShare, calls: f.calls, callPct: callShare }))}">
                     <span class="model-family-name">
                         <span class="legend-dot" style="background: ${escHtml(f.color)}; border-radius: 50%;"></span>
                         <span>${escHtml(f.family)}</span>
@@ -327,8 +327,8 @@ function renderModelUsage(mu) {
         ].filter(Boolean).join(' ');
 
         const tagHtml = (!it.has_tokens)
-            ? `<span class="model-rank-badge">无Token</span>`
-            : (it.is_unknown ? `<span class="model-rank-badge">未埋点</span>` : '');
+            ? `<span class="model-rank-badge">${escHtml(t('model.badge_no_token'))}</span>`
+            : (it.is_unknown ? `<span class="model-rank-badge">${escHtml(t('model.badge_uninstrumented'))}</span>` : '');
 
         const tokPctStr = fmtModelPct(it.tokens_pct, it.tokens);
         const callPctStr = fmtModelPct(it.calls_pct, it.calls);
@@ -343,11 +343,11 @@ function renderModelUsage(mu) {
             : `<span style="color: var(--muted); font-size: 11px;">-</span>`;
 
         const tokCellTitle = it.has_tokens
-            ? `输入 ${it.input_formatted} · 缓存读取 ${it.cache_formatted} · 输出 ${it.output_formatted}`
-            : '旧版日志未记录 Token 计费字段';
+            ? t('model.tokens_breakdown', { input: it.input_formatted, cache: it.cache_formatted, output: it.output_formatted })
+            : t('model.tokens_legacy');
 
         const avgTxt = it.has_tokens
-            ? `${formatTokens(Math.round((it.tokens || 0) / Math.max(it.calls || 1, 1)))}/次`
+            ? t('model.avg_per_call', { val: formatTokens(Math.round((it.tokens || 0) / Math.max(it.calls || 1, 1))) })
             : '-';
         const cacheRate = Number(it.cache_hit_rate || 0);
         const cacheCls = !it.has_tokens
@@ -368,7 +368,7 @@ function renderModelUsage(mu) {
                 <td class="model-metric-cell" title="${escHtml(tokCellTitle)}">${tokCellHtml}</td>
                 <td class="model-metric-cell">
                     <div class="model-metric-head">
-                        <span class="model-metric-val">${escHtml(it.calls_formatted)} 次</span>
+                        <span class="model-metric-val">${escHtml(t('model.calls_unit', { val: it.calls_formatted }))}</span>
                         <span class="model-metric-pct">${escHtml(callPctStr)}</span>
                     </div>
                     <div class="model-cell-track"><div class="model-cell-bar" style="width: ${callBarW.toFixed(1)}%; background: ${escHtml(it.color)}; opacity: 0.55;"></div></div>
@@ -385,13 +385,13 @@ function renderModelUsage(mu) {
         <table class="model-table">
             <thead>
                 <tr>
-                    <th>模型名称</th>
-                    <th class="${sortCls('tokens')}" onclick="setModelTableSort('tokens')">Token 消耗${sortInd('tokens')}</th>
-                    <th class="${sortCls('calls')}" onclick="setModelTableSort('calls')">调用次数${sortInd('calls')}</th>
-                    <th class="num ${sortCls('avg')}" onclick="setModelTableSort('avg')">均耗/次${sortInd('avg')}</th>
-                    <th class="num">缓存命中</th>
-                    <th class="num ${sortCls('sessions')}" onclick="setModelTableSort('sessions')">会话${sortInd('sessions')}</th>
-                    <th class="num ${sortCls('cost')}" onclick="setModelTableSort('cost')">预估费用${sortInd('cost')}</th>
+                    <th>${escHtml(t('model.col_name'))}</th>
+                    <th class="${sortCls('tokens')}" onclick="setModelTableSort('tokens')">${escHtml(t('model.col_tokens'))}${sortInd('tokens')}</th>
+                    <th class="${sortCls('calls')}" onclick="setModelTableSort('calls')">${escHtml(t('model.col_calls'))}${sortInd('calls')}</th>
+                    <th class="num ${sortCls('avg')}" onclick="setModelTableSort('avg')">${escHtml(t('model.col_avg'))}${sortInd('avg')}</th>
+                    <th class="num">${escHtml(t('model.col_cache'))}</th>
+                    <th class="num ${sortCls('sessions')}" onclick="setModelTableSort('sessions')">${escHtml(t('model.col_sessions'))}${sortInd('sessions')}</th>
+                    <th class="num ${sortCls('cost')}" onclick="setModelTableSort('cost')">${escHtml(t('model.col_cost'))}${sortInd('cost')}</th>
                 </tr>
             </thead>
             <tbody>${tbodyHtml}</tbody>
@@ -431,10 +431,10 @@ function renderHeatmap(days) {
         }
         const selClass = (sessionDateFilter && sessionDateFilter === d.date) ? ' selected-date' : '';
         const outClass = (d.future ? ' heat-future' : '') + (d.in_range === false ? ' out-range' : '') + selClass;
-        const tokNote = (d.tokens > 0) ? `${d.tokens_formatted} Tokens` : ((d.sessions > 0 || d.steps > 0) ? '无Token字段(旧版)' : '0 Tokens');
+        const tokNote = (d.tokens > 0) ? `${d.tokens_formatted} Tokens` : ((d.sessions > 0 || d.steps > 0) ? t('heatmap.unbilled_tip_note') : '0 Tokens');
         const clickAttr = d.future ? '' : ` data-date="${escHtml(d.date)}" onclick="filterSessionByDate('${escHtml(d.date)}')"`;
-        const tipHint = d.future ? '' : '（点击按该日筛选会话）';
-        const tip = `${d.date}: ${tokNote}, ${d.sessions} 会话, ${d.steps || 0} 步${tipHint}`;
+        const tipHint = d.future ? '' : t('heatmap.click_hint');
+        const tip = t('heatmap.cell_tip', { date: d.date, tokNote, sessions: d.sessions, steps: d.steps || 0, hint: tipHint });
         html += `<div class="heat-cell ${lvl}${outClass}"${clickAttr} title="${escHtml(tip)}"></div>`;
     });
     container.innerHTML = html;
@@ -444,7 +444,7 @@ function renderRankings(listId, items, countHeaderId, countHeaderText) {
     const list = document.getElementById(listId);
     if (countHeaderId) document.getElementById(countHeaderId).innerText = countHeaderText;
     if (!items || items.length === 0) {
-        list.innerHTML = `<div style="color: var(--muted); font-size: 11px;">暂无记录</div>`;
+        list.innerHTML = `<div style="color: var(--muted); font-size: 11px;">${escHtml(t('rank.empty'))}</div>`;
         return;
     }
     const maxCount = Math.max(...items.map(i => i.count), 1);

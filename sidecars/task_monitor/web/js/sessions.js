@@ -42,17 +42,17 @@ function renderDateFilterBar(matchedCount) {
     let chips = '';
     if (sessionDateFilter) {
         chips += `
-            <button type="button" class="date-filter-chip" onclick="clearSessionDateFilter()" title="点击取消按日筛选">
-                <span>📅 已按热力图筛选日期: <b>${escHtml(sessionDateFilter)}</b> (${matchedCount} 个会话)</span>
-                <span>✕ 清除</span>
+            <button type="button" class="date-filter-chip" onclick="clearSessionDateFilter()" title="${escHtml(t('sessions.date_filter_title'))}">
+                <span>${t('sessions.date_filter_label', { date: escHtml(sessionDateFilter), count: matchedCount })}</span>
+                <span>${escHtml(t('sessions.clear_filter'))}</span>
             </button>
         `;
     }
     if (sessionModelFilter) {
         chips += `
-            <button type="button" class="date-filter-chip" onclick="clearSessionModelFilter()" title="点击取消按模型筛选">
-                <span>🤖 已按模型筛选: <b>${escHtml(sessionModelFilter)}</b> (${matchedCount} 个会话)</span>
-                <span>✕ 清除</span>
+            <button type="button" class="date-filter-chip" onclick="clearSessionModelFilter()" title="${escHtml(t('sessions.model_filter_title'))}">
+                <span>${t('sessions.model_filter_label', { model: escHtml(sessionModelFilter), count: matchedCount })}</span>
+                <span>${escHtml(t('sessions.clear_filter'))}</span>
             </button>
         `;
     }
@@ -135,7 +135,7 @@ function renderSessionCards() {
         list = list.filter(s => s.created_day === sessionDateFilter);
     } else if (sessionMonthFilter !== 'all') {
         list = list.filter(s => {
-            const m = (s.created_day && s.created_day.length >= 7) ? s.created_day.slice(0, 7) : '未知';
+            const m = (s.created_day && s.created_day.length >= 7) ? s.created_day.slice(0, 7) : 'unknown';
             return m === sessionMonthFilter;
         });
     }
@@ -179,7 +179,7 @@ function renderSessionCards() {
     }
 
     if (list.length === 0) {
-        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 36px;">暂无匹配会话</div>`;
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--muted); padding: 36px;">${escHtml(t('sessions.empty'))}</div>`;
         if (pager) pager.innerHTML = '';
         return;
     }
@@ -187,7 +187,7 @@ function renderSessionCards() {
     const visibleList = list.slice(0, sessionVisibleLimit);
     let html = '';
     visibleList.forEach(s => {
-        const currentBadge = s.current ? `<span class="lc-ov-current">当前</span>` : '';
+        const currentBadge = s.current ? `<span class="lc-ov-current">${escHtml(t('sessions.current_badge'))}</span>` : '';
         const runningDot = s.running ? `<span class="lc-ov-running"></span>` : '';
         const currentClass = s.current ? ' lc-ov-session-current' : '';
         const safeId = escHtml(s.id);
@@ -201,18 +201,18 @@ function renderSessionCards() {
         const ctxVal = s.context_tokens || 0;
         const ctxFmt = hasBill
             ? formatTokens(ctxVal)
-            : (ctxVal > 0 ? ('~' + formatTokens(ctxVal)) : `${s.steps || 0}步`);
+            : (ctxVal > 0 ? ('~' + formatTokens(ctxVal)) : t('sessions.steps_short', { count: s.steps || 0 }));
         const totFmt = hasBill
             ? formatTokens(s.total_tokens || 0)
-            : ((s.est_tokens || 0) > 0 ? ('~' + formatTokens(s.est_tokens)) : '无Token记录');
+            : ((s.est_tokens || 0) > 0 ? ('~' + formatTokens(s.est_tokens)) : t('sessions.no_tokens'));
         const pct = hasBill ? Math.min(Math.max(s.occupancy_pct || 1, 1), 100) : Math.min(Math.max(s.occupancy_pct || 8, 5), 100);
         const strokeDash = (pct / 100) * c;
         const color = !hasBill ? '#94a3b8' : (pct > 75 ? '#ef4444' : (pct > 40 ? '#f59e0b' : '#3b82f6'));
-        const donutSub = hasBill ? `${s.occupancy_pct}%` : '旧版估算';
-        const costTxt = (s.cost_cny && s.cost_cny !== '--') ? `¥${escHtml(s.cost_cny)}` : '旧版无计价';
+        const donutSub = hasBill ? `${s.occupancy_pct}%` : t('sessions.legacy_est');
+        const costTxt = (s.cost_cny && s.cost_cny !== '--') ? `¥${escHtml(s.cost_cny)}` : escHtml(t('sessions.legacy_no_cost'));
 
         const modelPill = s.primary_model
-            ? `<span class="lc-ov-model-tag" title="主用模型: ${escHtml(s.primary_model)}">🤖 ${escHtml(s.primary_model)}</span>`
+            ? `<span class="lc-ov-model-tag" title="${escHtml(t('sessions.primary_model_title', { model: s.primary_model }))}">🤖 ${escHtml(s.primary_model)}</span>`
             : '';
 
         html += `
@@ -229,10 +229,10 @@ function renderSessionCards() {
 
                 <div class="lc-ov-session-crumb" style="display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 6px; min-width: 0; flex-wrap: wrap;">
-                        <span class="lc-ov-crumb-project" title="工作区: ${safeWs}">📁 ${safeWs}</span>
+                        <span class="lc-ov-crumb-project" title="${escHtml(t('sessions.ws_title', { ws: safeWs }))}">📁 ${safeWs}</span>
                         ${modelPill}
                     </div>
-                    <button type="button" class="btn-icon" style="font-size: 10.5px; padding: 2px 7px; min-height: 22px; color: var(--primary);" onclick="event.stopPropagation(); openContextDrawer('${safeId}')" title="上下文演进走势与瘦身透视">📈 上下文透视</button>
+                    <button type="button" class="btn-icon" style="font-size: 10.5px; padding: 2px 7px; min-height: 22px; color: var(--primary);" onclick="event.stopPropagation(); openContextDrawer('${safeId}')" title="${escHtml(t('sessions.btn_context_title'))}">${escHtml(t('sessions.btn_context'))}</button>
                 </div>
 
                 <div class="lc-ov-session-body">
@@ -249,22 +249,22 @@ function renderSessionCards() {
 
                     <div class="lc-ov-mini-stats">
                         <div class="lc-ov-mini-stat">
-                            <span class="lc-ov-mini-label">轮次</span>
-                            <span class="lc-ov-mini-value">${s.turns} 轮 ${s.steps} 步</span>
+                            <span class="lc-ov-mini-label">${escHtml(t('sessions.label_turns'))}</span>
+                            <span class="lc-ov-mini-value">${escHtml(t('sessions.turns_steps_val', { turns: s.turns, steps: s.steps }))}</span>
                         </div>
                         <div class="lc-ov-mini-stat">
-                            <span class="lc-ov-mini-label">${hasBill ? 'Token 总用量' : '文本估算量'}</span>
+                            <span class="lc-ov-mini-label">${escHtml(hasBill ? t('sessions.label_total_tokens') : t('sessions.label_est_tokens'))}</span>
                             <span class="lc-ov-mini-value">${escHtml(totFmt)}</span>
                         </div>
                         <div class="lc-ov-mini-stat">
-                            <span class="lc-ov-mini-label">总预估费用</span>
+                            <span class="lc-ov-mini-label">${escHtml(t('sessions.label_total_cost'))}</span>
                             <span class="lc-ov-mini-value">${costTxt}</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="lc-ov-session-preview">
-                    <span class="lc-ov-session-preview-label">最后消息</span>
+                    <span class="lc-ov-session-preview-label">${escHtml(t('sessions.last_msg'))}</span>
                     <span class="lc-ov-session-preview-text" title="${safeLast}">${safeLast}</span>
                 </div>
             </div>
@@ -277,13 +277,13 @@ function renderSessionCards() {
             const remain = list.length - visibleList.length;
             pager.innerHTML = `
                 <div class="lc-ov-pagination">
-                    <span>已显示 <b>${visibleList.length}</b> / ${list.length} 个会话</span>
-                    <button type="button" class="btn-icon" onclick="showMoreSessions(60)">加载更多 (+${Math.min(60, remain)})</button>
-                    <button type="button" class="btn-icon" onclick="showAllSessionsNow(${list.length})">展开全部 ${list.length} 个</button>
+                    <span>${t('sessions.showing_partial', { shown: visibleList.length, total: list.length })}</span>
+                    <button type="button" class="btn-icon" onclick="showMoreSessions(60)">${escHtml(t('sessions.load_more', { count: Math.min(60, remain) }))}</button>
+                    <button type="button" class="btn-icon" onclick="showAllSessionsNow(${list.length})">${escHtml(t('sessions.show_all', { total: list.length }))}</button>
                 </div>
             `;
         } else {
-            pager.innerHTML = `<div class="lc-ov-pagination"><span>已显示全部 ${list.length} 个匹配会话</span></div>`;
+            pager.innerHTML = `<div class="lc-ov-pagination"><span>${escHtml(t('sessions.showing_all', { total: list.length }))}</span></div>`;
         }
     }
 }
@@ -308,7 +308,7 @@ async function openSessionDetail(cid, targetStep = null) {
     const exists = cachedTaskData && cachedTaskData.all_tasks && cachedTaskData.all_tasks.some(x => x.conversation_id === cid);
     if (!exists) {
         try {
-            const res = await fetch(`/api/multi_task?range=${encodeURIComponent(currentTimeRange)}&task_id=${encodeURIComponent(cid)}`, { cache: 'no-store' });
+            const res = await fetch(`/api/multi_task?range=${encodeURIComponent(currentTimeRange)}&task_id=${encodeURIComponent(cid)}&lang=${encodeURIComponent(currentLang)}`, { cache: 'no-store' });
             if (res.ok) {
                 const report = await res.json();
                 cachedTaskData = report;

@@ -43,7 +43,7 @@ def migrate_caches_from(old_mod):
     return _migrate_caches(old_mod, analytics_engine, multi_task_manager)
 
 
-def dispatch_get(path, qs, code_version="", reload_error=None):
+def dispatch_get(path, qs, code_version="", reload_error=None, accept_language=""):
     """Dispatch GET requests to modular router with initialized singletons."""
     return _dispatch_get(
         path,
@@ -53,6 +53,7 @@ def dispatch_get(path, qs, code_version="", reload_error=None):
         asset_store=asset_store,
         code_version=code_version,
         reload_error=reload_error,
+        accept_language=accept_language,
     )
 
 

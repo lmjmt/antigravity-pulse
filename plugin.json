@@ -1,0 +1,12 @@
+{
+  "name": "antigravity-pulse",
+  "displayName": "Antigravity Pulse",
+  "version": "1.0.0",
+  "description": "Antigravity 实时任务脉搏、Swarm 子代理拓扑、模型用量统计与上下文瘦身诊断监控盘。",
+  "suggestedPrompts": [
+    "打开 Antigravity Pulse 监控大盘",
+    "查看当前任务进度与子代理状态",
+    "统计近期各模型 Token 消耗与调用次数",
+    "分析会话上下文膨胀并排查任务卡死"
+  ]
+}

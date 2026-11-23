@@ -1,0 +1,38 @@
+stages:
+  - verify
+
+verify-backend-and-tests:
+  stage: verify
+  image: python:3.11-slim
+  script:
+    - python3 -m compileall -q sidecars/task_monitor tests hooks
+    - python3 -m unittest discover -s tests -v
+    - |
+      python3 - <<'PY'
+      import pathlib, re, sys
+      home_pat = re.compile(r"(/Users/[A-Za-z0-9._-]+/|/home/[A-Za-z0-9._-]+/|C:\\\\Users\\\\)")
+      uuid_pat = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b", re.I)
+      email_pat = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+      bad = []
+      for p in pathlib.Path(".").rglob("*"):
+          if not p.is_file() or ".git" in p.parts or "__pycache__" in p.parts:
+              continue
+          rel = str(p)
+          txt = p.read_text(encoding="utf-8", errors="ignore")
+          if home_pat.search(txt):
+              bad.append(f"{rel}: absolute user home path")
+          if rel.startswith(("sidecars/", "hooks/")) and uuid_pat.search(txt):
+              bad.append(f"{rel}: hardcoded UUID in runtime code")
+          for em in email_pat.findall(txt):
+              if not em.endswith(("@example.com", "@users.noreply.github.com")):
+                  bad.append(f"{rel}: email literal {em}")
+      if bad:
+          sys.exit("Portability/PII issues found:\n  " + "\n  ".join(bad))
+      print("Portability & PII scan clean")
+      PY
+
+verify-frontend-js:
+  stage: verify
+  image: node:20-alpine
+  script:
+    - for f in sidecars/task_monitor/web/js/*.js; do node --check "$f"; done

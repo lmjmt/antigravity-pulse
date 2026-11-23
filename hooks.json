@@ -1,0 +1,10 @@
+{
+  "antigravity-pulse-init": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "python3 hooks/on_session_start.py"
+      }
+    ]
+  }
+}

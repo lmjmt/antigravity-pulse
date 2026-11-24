@@ -55,6 +55,16 @@ function handleServerData(data) {
             if (activeTabName === 'analytics') renderSessionCards();
         }
     }
+    if (data.quota) {
+        const quotaSig = data.quota.sig || data.quota.status;
+        if (quotaSig !== lastQuotaSig) {
+            lastQuotaSig = quotaSig;
+            cachedQuota = data.quota;
+            if (typeof renderQuota === 'function') {
+                renderQuota(data.quota);
+            }
+        }
+    }
 }
 
 // Instant Hydration
@@ -83,6 +93,7 @@ async function fetchUpdates() {
         if (selectedTaskId && !autoFollow) url += `&task_id=${encodeURIComponent(selectedTaskId)}`;
         if (lastAnalyticsSig) url += `&known_ana=${encodeURIComponent(lastAnalyticsSig)}`;
         if (lastSessionsSig) url += `&known_sess=${encodeURIComponent(lastSessionsSig)}`;
+        if (lastQuotaSig) url += `&known_quota=${encodeURIComponent(lastQuotaSig)}`;
         const res = await fetch(url, { 
             cache: 'no-store',
             signal: controller.signal
@@ -112,6 +123,7 @@ function manualSync() {
     lastAnalyticsSig = null;
     lastSessionsSig = null;
     lastMultiTaskSig = null;
+    lastQuotaSig = null;
     fetchUpdates();
 }
 

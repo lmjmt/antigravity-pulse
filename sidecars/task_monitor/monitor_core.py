@@ -25,6 +25,7 @@ for _mod_name in list(sys.modules.keys()):
 from core.analytics import AntigravityAnalytics
 from core.cache import migrate_caches_from as _migrate_caches
 from core.config import CACHE_SCHEMA_VERSION
+from core.quota import QUOTA_CACHE as _QUOTA_CACHE
 from core.router import WebAssetStore, dispatch_get as _dispatch_get
 from core.storage import DB_CONVS_CACHE as _DB_CONVS_CACHE
 from core.swarm import (

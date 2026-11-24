@@ -61,6 +61,22 @@ const I18N = {
         'donut.output_speed': '输出速度 {val} tok/s',
         'donut.active_duration': '活跃时长',
 
+        'quota.title': '剩余额度',
+        'quota.strip_label': '额度',
+        'quota.loading_badge': '检测中',
+        'quota.refresh_btn': '刷新',
+        'quota.refreshing_btn': '刷新中...',
+        'quota.refresh_title': '立即向本地 Language Server 重新拉取额度',
+        'quota.details_show': '详情 ▾',
+        'quota.details_hide': '收起 ▴',
+        'quota.details_title': '展开或收起分组进度条与单模型剩余额度明细',
+        'quota.details_sub': '各模型组双周期（7天 / 5小时）实时配额与重置倒计时',
+        'quota.models_show': '模型明细 ({count})',
+        'quota.models_hide': '收起明细 ({count})',
+        'quota.resets_in': '{time} 后重置',
+        'quota.updated_at': '更新于 {time}',
+        'quota.empty_groups': 'Language Server 暂未返回配额分组数据',
+
         'model.title': '模型使用量统计',
         'model.hint': '点击表头排序 · 点击模型行筛选下方会话',
         'model.donut_token': 'Token 占比',
@@ -339,6 +355,22 @@ const I18N = {
         'donut.duration_stats': 'Time Breakdown',
         'donut.output_speed': 'Output Speed {val} tok/s',
         'donut.active_duration': 'Active Time',
+
+        'quota.title': 'Remaining Quota',
+        'quota.strip_label': 'Quota',
+        'quota.loading_badge': 'Checking',
+        'quota.refresh_btn': 'Refresh',
+        'quota.refreshing_btn': 'Refreshing...',
+        'quota.refresh_title': 'Fetch live quota from local Language Server',
+        'quota.details_show': 'Details ▾',
+        'quota.details_hide': 'Hide ▴',
+        'quota.details_title': 'Expand or collapse group progress bars and per-model quotas',
+        'quota.details_sub': 'Live 7-day / 5-hour quota buckets and reset countdowns',
+        'quota.models_show': 'Model Quotas ({count})',
+        'quota.models_hide': 'Hide Models ({count})',
+        'quota.resets_in': 'Resets in {time}',
+        'quota.updated_at': 'Updated {time}',
+        'quota.empty_groups': 'Language Server returned no quota groups yet',
 
         'model.title': 'Model Usage Telemetry',
         'model.hint': 'Click headers to sort · Click a row to filter sessions',
@@ -621,6 +653,7 @@ function toggleLanguage() {
     if (typeof lastAnalyticsSig !== 'undefined') lastAnalyticsSig = null;
     if (typeof lastSessionsSig !== 'undefined') lastSessionsSig = null;
     if (typeof lastMultiTaskSig !== 'undefined') lastMultiTaskSig = null;
+    if (typeof lastQuotaSig !== 'undefined') lastQuotaSig = null;
     if (typeof sessionModelFilter !== 'undefined') sessionModelFilter = '';
 
     applyStaticI18n();

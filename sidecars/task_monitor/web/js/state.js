@@ -7,6 +7,7 @@ let autoFollow = true;
 let cachedTaskData = null;
 let cachedAnalytics = null;
 let cachedSessions = null;
+let cachedQuota = null;
 
 const VALID_TIME_RANGES = ['today', '7d', '30d', 'all'];
 
@@ -32,6 +33,10 @@ let inspHighlightStep = null;
 let lastAnalyticsSig = null;
 let lastSessionsSig = null;
 let lastMultiTaskSig = null;
+let lastQuotaSig = null;
+let quotaDetailsExpanded = false;
+let quotaModelsExpanded = false;
+let quotaRefreshing = false;
 
 let syncCycleStart = Date.now();
 
@@ -111,8 +116,9 @@ function switchMainTab(tab) {
     document.getElementById('tab-task-btn').className = 'tab-btn' + (tab === 'task' ? ' active' : '');
     if (tab === 'task' && cachedTaskData) {
         renderAllTaskViews(cachedTaskData);
-    } else if (tab === 'analytics' && cachedAnalytics) {
-        renderAnalytics(cachedAnalytics);
+    } else if (tab === 'analytics') {
+        if (cachedQuota && typeof renderQuota === 'function') renderQuota(cachedQuota);
+        if (cachedAnalytics) renderAnalytics(cachedAnalytics);
     }
 }
 

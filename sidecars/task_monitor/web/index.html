@@ -13,36 +13,63 @@
     <div class="container">
         <!-- Top Nav Bar -->
         <div class="top-nav">
-            <div class="nav-left">
-                <div class="logo-text">
-                    <span class="pulse-dot"></span> Antigravity Pulse
+            <div class="top-nav-main">
+                <div class="nav-left">
+                    <div class="logo-text">
+                        <span class="pulse-dot"></span> Antigravity Pulse
+                    </div>
+                    <div class="tabs">
+                        <button class="tab-btn active" id="tab-analytics-btn" onclick="switchMainTab('analytics')">
+                            <span data-i18n="tab.analytics">📊 效能与会话大盘</span>
+                        </button>
+                        <button class="tab-btn" id="tab-task-btn" onclick="switchMainTab('task')">
+                            <span data-i18n="tab.task">⚡ 实时任务监控</span> <span id="nav-running-badge" class="badge badge-success" style="font-size: 9px; padding: 1px 6px;">0 活跃</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="tabs">
-                    <button class="tab-btn active" id="tab-analytics-btn" onclick="switchMainTab('analytics')">
-                        <span data-i18n="tab.analytics">📊 效能与会话大盘</span>
-                    </button>
-                    <button class="tab-btn" id="tab-task-btn" onclick="switchMainTab('task')">
-                        <span data-i18n="tab.task">⚡ 实时任务监控</span> <span id="nav-running-badge" class="badge badge-success" style="font-size: 9px; padding: 1px 6px;">0 活跃</span>
+                <div class="nav-right">
+                    <div class="time-range-pills" id="global-time-range" role="group" data-i18n-title="nav.range_title" title="全局时间范围筛选">
+                        <button type="button" class="tr-btn" data-range="today" data-i18n="range.today" onclick="setTimeRange('today')">今天</button>
+                        <button type="button" class="tr-btn" data-range="7d" data-i18n="range.7d" onclick="setTimeRange('7d')">7天</button>
+                        <button type="button" class="tr-btn" data-range="30d" data-i18n="range.30d" onclick="setTimeRange('30d')">30天</button>
+                        <button type="button" class="tr-btn active" data-range="all" data-i18n="range.all" onclick="setTimeRange('all')">全部</button>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px;" data-i18n-title="nav.sync_badge_title" title="1.5s 实时自动同步 · Cmd+R 自动加载最新代码">
+                        <div class="sync-bar-wrap"><div id="sync-bar-progress" class="sync-bar-fill"></div></div>
+                        <span id="sync-indicator" data-i18n="nav.syncing_initial" style="font-size: 11px; color: var(--muted);">1.5s 同步中</span>
+                    </div>
+                    <button class="btn-icon btn-nav-icon" id="lang-toggle-btn" onclick="toggleLanguage()" style="font-size: 11px; font-weight: 700; min-width: 34px; padding: 0 7px;" data-i18n-title="nav.lang_title" title="Switch to English (切换到英文)">EN</button>
+                    <button class="btn-icon btn-nav-icon" onclick="toggleTheme()" data-i18n-title="nav.theme_title" title="切换明暗主题">🌓</button>
+                    <button class="btn-icon btn-nav-icon" onclick="manualSync()" data-i18n-title="nav.sync_title" title="强制刷新数据">🔄</button>
+                    <button class="btn-icon btn-reload" onclick="location.reload()" data-i18n-title="nav.reload_title" title="硬重载页面 (Cmd+R)">
+                        <span class="reload-glyph">⟳</span><span data-i18n="nav.reload_btn">重载</span>
                     </button>
                 </div>
             </div>
-            <div class="nav-right">
-                <div class="time-range-pills" id="global-time-range" role="group" data-i18n-title="nav.range_title" title="全局时间范围筛选">
-                    <button type="button" class="tr-btn" data-range="today" data-i18n="range.today" onclick="setTimeRange('today')">今天</button>
-                    <button type="button" class="tr-btn" data-range="7d" data-i18n="range.7d" onclick="setTimeRange('7d')">7天</button>
-                    <button type="button" class="tr-btn" data-range="30d" data-i18n="range.30d" onclick="setTimeRange('30d')">30天</button>
-                    <button type="button" class="tr-btn active" data-range="all" data-i18n="range.all" onclick="setTimeRange('all')">全部</button>
+
+            <!-- Sticky Compact Quota Strip (below time-range row, shared across tabs) -->
+            <div class="quota-strip" id="quota-strip">
+                <div class="quota-strip-left">
+                    <span class="quota-strip-title">🔋 <span data-i18n="quota.strip_label">额度</span></span>
+                    <span class="badge badge-info" id="quota-status-badge" data-i18n="quota.loading_badge">检测中</span>
+                    <span class="badge" id="quota-tier-badge" style="display: none;"></span>
+                    <div class="quota-strip-chips" id="quota-strip-chips"></div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px;" data-i18n-title="nav.sync_badge_title" title="1.5s 实时自动同步 · Cmd+R 自动加载最新代码">
-                    <div class="sync-bar-wrap"><div id="sync-bar-progress" class="sync-bar-fill"></div></div>
-                    <span id="sync-indicator" data-i18n="nav.syncing_initial" style="font-size: 11px; color: var(--muted);">1.5s 同步中</span>
+                <div class="quota-strip-right">
+                    <span class="donut-sub quota-updated-inline" id="quota-updated-at"></span>
+                    <button type="button" class="btn-icon quota-strip-btn" id="quota-details-toggle" onclick="toggleQuotaDetails()" data-i18n-title="quota.details_title" title="展开或收起分组进度条与单模型剩余额度明细" data-i18n="quota.details_show">详情 ▾</button>
+                    <button type="button" class="btn-icon quota-strip-btn" id="quota-refresh-btn" onclick="refreshQuota(true)" data-i18n-title="quota.refresh_title" title="立即向本地 Language Server 重新拉取额度">↻ <span data-i18n="quota.refresh_btn">刷新</span></button>
                 </div>
-                <button class="btn-icon btn-nav-icon" id="lang-toggle-btn" onclick="toggleLanguage()" style="font-size: 11px; font-weight: 700; min-width: 34px; padding: 0 7px;" data-i18n-title="nav.lang_title" title="Switch to English (切换到英文)">EN</button>
-                <button class="btn-icon btn-nav-icon" onclick="toggleTheme()" data-i18n-title="nav.theme_title" title="切换明暗主题">🌓</button>
-                <button class="btn-icon btn-nav-icon" onclick="manualSync()" data-i18n-title="nav.sync_title" title="强制刷新数据">🔄</button>
-                <button class="btn-icon btn-reload" onclick="location.reload()" data-i18n-title="nav.reload_title" title="硬重载页面 (Cmd+R)">
-                    <span class="reload-glyph">⟳</span><span data-i18n="nav.reload_btn">重载</span>
-                </button>
+            </div>
+
+            <!-- On-Demand Expandable Quota Details -->
+            <div class="quota-detail-panel" id="quota-detail-panel" style="display: none;">
+                <div class="quota-detail-toolbar">
+                    <span class="donut-sub" id="quota-detail-hint"></span>
+                    <button type="button" class="btn-icon quota-strip-btn" id="quota-models-toggle" style="display: none;" onclick="toggleQuotaModels()"></button>
+                </div>
+                <div id="quota-body"></div>
+                <div id="quota-models-wrap" style="display: none;"></div>
             </div>
         </div>
 

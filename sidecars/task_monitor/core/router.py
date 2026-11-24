@@ -8,6 +8,7 @@ import urllib.parse
 
 from core.config import normalize_time_range
 from core.i18n import normalize_lang
+from core.quota import collect_quota
 
 _STATIC_MIME_TYPES = {
     ".css": "text/css; charset=utf-8",
@@ -180,12 +181,19 @@ def dispatch_get(path, qs, analytics_engine, multi_task_manager, asset_store, co
         return 200, "application/json; charset=utf-8", _json_bytes(
             analytics_engine.collect_analytics(time_range=time_range, lang=lang)
         )
+    if path == "/api/quota":
+        force_flag = str(qs.get("force", ["0"])[0]).strip().lower() in ("1", "true", "yes")
+        return 200, "application/json; charset=utf-8", _json_bytes(
+            collect_quota(lang=lang, force=force_flag)
+        )
 
     known_ana = qs.get("known_ana", [None])[0]
     known_sess = qs.get("known_sess", [None])[0]
+    known_quota = qs.get("known_quota", [None])[0]
     mt_report = multi_task_manager.collect_multi_task_report(task_id, time_range=time_range, lang=lang)
     ana_report = analytics_engine.collect_analytics(time_range=time_range, lang=lang)
     sess_report = analytics_engine.collect_sessions_overview(default_cid, time_range=time_range, lang=lang)
+    quota_report = collect_quota(lang=lang, force=False)
 
     payload = {
         "code_version": full_version,
@@ -195,6 +203,7 @@ def dispatch_get(path, qs, analytics_engine, multi_task_manager, asset_store, co
         "multi_task": mt_report,
         "analytics": None if (path == "/api/all" and known_ana and ana_report.get("sig") == known_ana) else ana_report,
         "sessions_overview": None if (path == "/api/all" and known_sess and sess_report.get("sig") == known_sess) else sess_report,
+        "quota": None if (path == "/api/all" and known_quota and quota_report.get("sig") == known_quota) else quota_report,
     }
     if path == "/api/all":
         return 200, "application/json; charset=utf-8", _json_bytes(payload)

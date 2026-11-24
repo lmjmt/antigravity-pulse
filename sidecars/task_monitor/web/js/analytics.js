@@ -466,3 +466,256 @@ function renderRankings(listId, items, countHeaderId, countHeaderText) {
     });
     list.innerHTML = html;
 }
+
+// ================= REMAINING QUOTA STRIP & EXPANDABLE DETAILS =================
+function formatShortWindow(bucket) {
+    const w = String((bucket && bucket.window) || '').toLowerCase();
+    const id = String((bucket && bucket.id) || '').toLowerCase();
+    if (w === 'weekly' || id.includes('weekly') || id.includes('7d')) return '7d';
+    if (w === '5h' || id.includes('5h')) return '5h';
+    return (bucket && bucket.label) ? String(bucket.label) : '';
+}
+
+function formatShortGroupName(name) {
+    return String(name || '')
+        .replace(/\s+models?$/i, '')
+        .replace(/\s+and\s+GPT/i, '/GPT')
+        .trim();
+}
+
+function renderQuotaStripChips(q) {
+    const chipsEl = document.getElementById('quota-strip-chips');
+    if (!chipsEl || !q) return;
+
+    if (!q.available) {
+        const msg = q.hint || q.message || '';
+        chipsEl.innerHTML = msg
+            ? `<span class="quota-strip-msg" title="${escHtml(msg)}">${escHtml(msg)}</span>`
+            : '';
+        return;
+    }
+
+    const groups = Array.isArray(q.groups) ? q.groups : [];
+    if (groups.length === 0) {
+        chipsEl.innerHTML = `<span class="quota-strip-msg">${escHtml(t('quota.empty_groups'))}</span>`;
+        return;
+    }
+
+    let html = '';
+    groups.forEach(g => {
+        const buckets = Array.isArray(g.buckets) ? g.buckets : [];
+        const tipLines = [];
+        const partsHtml = buckets.map(b => {
+            const lvl = ['ok', 'warn', 'crit', 'disabled', 'muted'].includes(b.level) ? b.level : 'muted';
+            const win = formatShortWindow(b);
+            const valTxt = b.disabled ? (b.remaining_text || '--') : (b.remaining_text || 'N/A');
+            const resetNote = b.resets_in ? ` (${t('quota.resets_in', { time: b.resets_in })})` : '';
+            tipLines.push(`${b.label || win}: ${valTxt}${resetNote}`);
+            return `<span class="quota-strip-val ${lvl}">${escHtml(win ? `${win} ${valTxt}` : valTxt)}</span>`;
+        }).join('<span class="quota-strip-sep">·</span>');
+
+        const tip = `${g.name || ''}\n${tipLines.join('\n')}`;
+        html += `
+            <button type="button" class="quota-strip-chip" onclick="toggleQuotaDetails()" title="${escHtml(tip)}">
+                <span class="quota-strip-group">${escHtml(formatShortGroupName(g.name))}</span>
+                ${partsHtml}
+            </button>
+        `;
+    });
+    chipsEl.innerHTML = html;
+}
+
+function toggleQuotaDetails() {
+    quotaDetailsExpanded = !quotaDetailsExpanded;
+    if (cachedQuota) {
+        renderQuota(cachedQuota);
+    } else {
+        const panel = document.getElementById('quota-detail-panel');
+        const btn = document.getElementById('quota-details-toggle');
+        if (panel) panel.style.display = quotaDetailsExpanded ? 'block' : 'none';
+        if (btn) btn.innerText = t(quotaDetailsExpanded ? 'quota.details_hide' : 'quota.details_show');
+    }
+}
+
+function renderQuota(q) {
+    if (!q) return;
+    cachedQuota = q;
+
+    const statusBadge = document.getElementById('quota-status-badge');
+    const tierBadge = document.getElementById('quota-tier-badge');
+    const updatedEl = document.getElementById('quota-updated-at');
+    const detailsBtn = document.getElementById('quota-details-toggle');
+    const detailPanel = document.getElementById('quota-detail-panel');
+    const detailHint = document.getElementById('quota-detail-hint');
+    const modelsBtn = document.getElementById('quota-models-toggle');
+    const bodyEl = document.getElementById('quota-body');
+    const modelsWrap = document.getElementById('quota-models-wrap');
+
+    if (statusBadge) {
+        let cls = 'badge quota-badge-muted';
+        if (q.available) cls = 'badge quota-badge-live';
+        else if (q.status === 'unreachable') cls = 'badge quota-badge-warn';
+        statusBadge.className = cls;
+        statusBadge.innerText = q.status_label || '-';
+    }
+
+    if (tierBadge) {
+        if (q.plan_tier) {
+            tierBadge.style.display = 'inline-block';
+            tierBadge.className = 'badge badge-info';
+            tierBadge.innerText = q.plan_tier;
+        } else {
+            tierBadge.style.display = 'none';
+        }
+    }
+
+    if (updatedEl) {
+        if (q.fetched_at) {
+            const d = new Date(q.fetched_at);
+            const timeTxt = isNaN(d.getTime()) ? q.fetched_at : d.toLocaleTimeString();
+            updatedEl.innerText = t('quota.updated_at', { time: timeTxt });
+        } else {
+            updatedEl.innerText = '';
+        }
+    }
+
+    renderQuotaStripChips(q);
+
+    if (detailsBtn) {
+        detailsBtn.innerText = t(quotaDetailsExpanded ? 'quota.details_hide' : 'quota.details_show');
+    }
+    if (detailPanel) {
+        detailPanel.style.display = quotaDetailsExpanded ? 'block' : 'none';
+    }
+    if (!quotaDetailsExpanded || !bodyEl) return;
+
+    if (detailHint) {
+        detailHint.innerText = q.available ? t('quota.details_sub') : '';
+    }
+
+    const modelsList = Array.isArray(q.models) ? q.models : [];
+    if (modelsBtn) {
+        if (q.available && modelsList.length > 0) {
+            modelsBtn.style.display = 'inline-flex';
+            modelsBtn.innerText = t(quotaModelsExpanded ? 'quota.models_hide' : 'quota.models_show', { count: modelsList.length });
+        } else {
+            modelsBtn.style.display = 'none';
+        }
+    }
+
+    if (!q.available) {
+        if (modelsWrap) modelsWrap.style.display = 'none';
+        bodyEl.innerHTML = `
+            <div class="quota-fallback-box">
+                <div class="quota-fallback-msg">${escHtml(q.message || '-')}</div>
+                ${q.hint ? `<div class="quota-fallback-hint">${escHtml(q.hint)}</div>` : ''}
+            </div>
+        `;
+        return;
+    }
+
+    const groups = Array.isArray(q.groups) ? q.groups : [];
+    if (groups.length === 0) {
+        bodyEl.innerHTML = `
+            <div class="quota-fallback-box">
+                <div class="quota-fallback-msg">${escHtml(t('quota.empty_groups'))}</div>
+            </div>
+        `;
+    } else {
+        let groupsHtml = '<div class="quota-groups-grid">';
+        groups.forEach(g => {
+            const buckets = Array.isArray(g.buckets) ? g.buckets : [];
+            let bucketsHtml = '<div class="quota-buckets-grid">';
+            buckets.forEach(b => {
+                const lvl = ['ok', 'warn', 'crit', 'disabled', 'muted'].includes(b.level) ? b.level : 'muted';
+                const pctNum = (typeof b.remaining_pct === 'number' && !b.disabled) ? Math.max(0, Math.min(100, b.remaining_pct)) : 0;
+                const leftTxt = b.disabled ? (b.remaining_text || '--') : (b.remaining_text || 'N/A');
+                const resetTxt = b.resets_in ? t('quota.resets_in', { time: b.resets_in }) : '';
+                bucketsHtml += `
+                    <div class="quota-bucket">
+                        <div class="quota-bucket-row">
+                            <span class="quota-bucket-label">${escHtml(b.label || b.window || '')}</span>
+                            <span class="quota-bucket-pct ${lvl}">${escHtml(leftTxt)}</span>
+                        </div>
+                        <div class="quota-track"><div class="quota-fill ${lvl}" style="width: ${pctNum.toFixed(1)}%;"></div></div>
+                        ${resetTxt ? `<div class="quota-bucket-meta">${escHtml(resetTxt)}</div>` : ''}
+                    </div>
+                `;
+            });
+            bucketsHtml += '</div>';
+            groupsHtml += `
+                <div class="quota-group-box">
+                    <div class="quota-group-head">
+                        <span class="quota-group-title">${escHtml(g.name || '')}</span>
+                        ${g.description ? `<span class="quota-group-desc" title="${escHtml(g.description)}">${escHtml(g.description)}</span>` : ''}
+                    </div>
+                    ${bucketsHtml}
+                </div>
+            `;
+        });
+        groupsHtml += '</div>';
+        bodyEl.innerHTML = groupsHtml;
+    }
+
+    if (modelsWrap) {
+        if (quotaModelsExpanded && modelsList.length > 0) {
+            let mHtml = '<div class="quota-models-grid">';
+            modelsList.forEach(m => {
+                const lvl = ['ok', 'warn', 'crit', 'disabled', 'muted'].includes(m.level) ? m.level : 'muted';
+                const pctNum = (typeof m.remaining_pct === 'number') ? Math.max(0, Math.min(100, m.remaining_pct)) : 0;
+                const resetTxt = m.resets_in ? t('quota.resets_in', { time: m.resets_in }) : '';
+                mHtml += `
+                    <div class="quota-model-item">
+                        <div class="quota-model-top">
+                            <span class="quota-model-name" title="${escHtml(m.label || m.model_id)}">${escHtml(m.label || m.model_id)}</span>
+                            <span class="quota-bucket-pct ${lvl}">${escHtml(m.remaining_text || 'N/A')}</span>
+                        </div>
+                        <div class="quota-track"><div class="quota-fill ${lvl}" style="width: ${pctNum.toFixed(1)}%;"></div></div>
+                        ${resetTxt ? `<div class="quota-bucket-meta">${escHtml(resetTxt)}</div>` : ''}
+                    </div>
+                `;
+            });
+            mHtml += '</div>';
+            modelsWrap.innerHTML = mHtml;
+            modelsWrap.style.display = 'block';
+        } else {
+            modelsWrap.style.display = 'none';
+        }
+    }
+}
+
+function toggleQuotaModels() {
+    quotaModelsExpanded = !quotaModelsExpanded;
+    if (cachedQuota) renderQuota(cachedQuota);
+}
+
+async function refreshQuota(force) {
+    if (quotaRefreshing) return;
+    quotaRefreshing = true;
+    const reqLang = currentLang;
+    const btn = document.getElementById('quota-refresh-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = t('quota.refreshing_btn');
+    }
+    try {
+        const res = await fetch(`/api/quota?force=${force ? '1' : '0'}&lang=${encodeURIComponent(reqLang)}&_t=${Date.now()}`, {
+            cache: 'no-store'
+        });
+        if (res.ok) {
+            const q = await res.json();
+            if (reqLang === currentLang) {
+                lastQuotaSig = q.sig || null;
+                renderQuota(q);
+            }
+        }
+    } catch (err) {
+        // Keep existing cached quota view on transient network failure
+    } finally {
+        quotaRefreshing = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `&#8635; <span data-i18n="quota.refresh_btn">${escHtml(t('quota.refresh_btn'))}</span>`;
+        }
+    }
+}

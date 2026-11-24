@@ -1,6 +1,7 @@
 """Zero-loss cache migration across atomic hot-reloads."""
 
 from core.config import CACHE_SCHEMA_VERSION
+from core.quota import QUOTA_CACHE, QUOTA_CACHE_LOCK
 from core.storage import DB_CACHE_LOCK, DB_CONVS_CACHE
 from core.swarm import SWARM_CACHE_LOCK, SWARM_MODEL_MAP_CACHE, SWARM_STATE_CACHE
 
@@ -37,6 +38,14 @@ def migrate_caches_from(old_mod, analytics_engine, multi_task_manager):
         with SWARM_CACHE_LOCK:
             SWARM_MODEL_MAP_CACHE["sig"] = old_sw_map.get("sig")
             SWARM_MODEL_MAP_CACHE["map"] = dict(old_sw_map.get("map") or {})
+            migrated = True
+
+    old_quota = getattr(old_mod, "_QUOTA_CACHE", None)
+    if isinstance(old_quota, dict) and old_quota.get("raw") is not None and QUOTA_CACHE.get("raw") is None:
+        with QUOTA_CACHE_LOCK:
+            QUOTA_CACHE["sig"] = old_quota.get("sig")
+            QUOTA_CACHE["ts"] = float(old_quota.get("ts") or 0.0)
+            QUOTA_CACHE["raw"] = old_quota.get("raw")
             migrated = True
 
     old_ana = getattr(old_mod, "analytics_engine", None)
